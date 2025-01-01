@@ -1,0 +1,7 @@
+services:
+  - type: web
+    name: backend
+    env: node
+    buildCommand: npm install
+    startCommand: npm start
+    nodeVersion: 20.17.0
