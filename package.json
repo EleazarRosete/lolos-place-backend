@@ -2,12 +2,12 @@
   "name": "backend",
   "version": "1.0.0",
   "main": "index.js",
-  "scripts": {
-    "start": "node server.js",
-    "dev": "npx concurrently \"npm run start-node\" \"npm run start-flask\"",
-    "start-node": "node server.js",
-    "start-flask": "python app.py"
-  },
+"scripts": {
+  "start": "node server.js",
+  "dev": "concurrently \"npm run start-node\" \"npm run start-flask\"",
+  "start-node": "node server.js",
+  "start-flask": "python app.py"
+},
   "keywords": [],
   "author": "",
   "license": "ISC",
