@@ -6,7 +6,7 @@
 
 "scripts": {
   "start": "node server.js",
-  "dev": "./node_modules/.bin/concurrently \"npm run start-node\" \"npm run start-flask\"",
+  "dev": "npm run start-node & npm run start-flask",
   "start-node": "node server.js",
   "start-flask": "python app.py"
 }
