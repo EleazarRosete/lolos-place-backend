@@ -56,9 +56,6 @@ def get_db_connection():
 
 
 
-
-
-
 @app.route('/test-db')
 def test_db():
     try:
