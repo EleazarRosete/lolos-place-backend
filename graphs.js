@@ -6,7 +6,7 @@ app.use(express.json());
 const router = express.Router();
 
 
-const pythonBackendUrl = 'http://127.0.0.1:5000/peak-hours-data';
+const pythonBackendUrl = 'https://lolos-place-backend.onrender.com/peak-hours-data';
 
 // POST route to call the peak-hours-data route in the Python backend
 router.get('/get-peak-hours', async (req, res) => {
@@ -27,7 +27,7 @@ app.get('/get-product-demand', async (req, res) => {
 
   try {
     // Make a GET request to the Flask API with query parameters (year and month)
-    const response = await axios.get('http://127.0.0.1:5000/graphs/get-product-demand', {
+    const response = await axios.get('https://lolos-place-backend.onrender.com/graphs/get-product-demand', {
       params: { year, month }  // Pass the year and month as query parameters
     });
 
