@@ -1,49 +1,123 @@
 const express = require('express');
 const axios = require('axios');
-
 const app = express();
 app.use(express.json());
 const router = express.Router();
+const pool = require('./db'); 
 
 
-const pythonBackendUrl = 'https://lolos-place-backend.onrender.com/peak-hours-data';
-
-// POST route to call the peak-hours-data route in the Python backend
-router.get('/get-peak-hours', async (req, res) => {
+router.get('/peak-hours-data', async (req, res) => {
   try {
-    // Making a request to the Python backend
-    const response = await axios.get(pythonBackendUrl);
-    
-    // Sending the data received from Python backend to the frontend
-    res.json(response.data);
-  } catch (error) {
-    console.error('Error calling Python backend:', error);
-    res.status(500).json({ error: 'Error retrieving peak hours data from backend' });
-  }
-});
+    // Execute the SQL query
+    const query = `
+      SELECT TRIM(TO_CHAR(date, 'Day')) AS day_of_week,
+             EXTRACT(HOUR FROM time AT TIME ZONE 'UTC') AS hour_of_day,
+             COUNT(*) AS order_count
+      FROM orders
+      WHERE EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
+      GROUP BY day_of_week, hour_of_day
+      ORDER BY day_of_week, hour_of_day;
+    `;
+    const { rows } = await pool.query(query);
 
-app.get('/get-product-demand', async (req, res) => {
-  const { year, month } = req.query;  // Get year and month from query parameters
+    // Define days and peak hours
+    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    const hours = Array.from({ length: 11 }, (_, i) => i + 10); // Peak hours: 10 AM to 9 PM
 
-  try {
-    // Make a GET request to the Flask API with query parameters (year and month)
-    const response = await axios.get('https://lolos-place-backend.onrender.com/graphs/get-product-demand', {
-      params: { year, month }  // Pass the year and month as query parameters
+    // Initialize the data structure
+    const orderData = {};
+    days.forEach(day => {
+      orderData[day] = {};
+      hours.forEach(hour => {
+        orderData[day][hour] = 0;
+      });
     });
 
-    // Return the response data from Flask API to the frontend
-    res.json(response.data);
-  } catch (error) {
-    console.error("Error fetching data from Flask API:", error);
-    res.status(500).json({ error: "Error fetching product demand" });
+    // Populate orderData with query results
+    rows.forEach(row => {
+      const { day_of_week, hour_of_day, order_count } = row;
+      if (orderData[day_of_week]) {
+        orderData[day_of_week][parseInt(hour_of_day)] = order_count;
+      }
+    });
+
+    // Find the peak hour for each day
+    const highestOrders = {};
+    days.forEach(day => {
+      const dayData = orderData[day];
+      const highestHour = Object.keys(dayData).reduce((a, b) => dayData[a] > dayData[b] ? a : b);
+      highestOrders[day] = {
+        hour: highestHour,
+        order_count: dayData[highestHour],
+      };
+    });
+
+    // Return the response
+    res.json({ highest_orders: highestOrders });
+  } catch (e) {
+    console.error('Error:', e);
+    res.status(500).json({ error: `Error retrieving peak hours data: ${e.message}` });
   }
 });
 
 
 
 
-router.post('/get-sales-forecast');
-router.post('/get-customer-reviews');
+router.get('/highest-selling-products', async (req, res) => {
+  try {
+    const { year, month } = req.query;
+
+    if (!year || !month) {
+      return res.status(400).json({ error: 'Year and month are required' });
+    }
+
+    // SQL query to fetch the highest selling products
+    const query = `
+      WITH monthly_sales AS (
+        SELECT 
+          product_name,
+          DATE_TRUNC('month', date::DATE) AS sale_month,
+          SUM(quantity_sold) AS total_quantity_sold
+        FROM sales_data
+        WHERE EXTRACT(YEAR FROM date::DATE) = $1
+        AND EXTRACT(MONTH FROM date::DATE) = $2
+        GROUP BY product_name, DATE_TRUNC('month', date::DATE)
+        ORDER BY sale_month, total_quantity_sold DESC
+      )
+      SELECT 
+        sale_month,
+        product_name,
+        total_quantity_sold
+      FROM monthly_sales;
+    `;
+
+    // Execute the query with the provided year and month
+    const result = await pool.query(query, [year, month]);
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'No sales data available for the given month and year' });
+    }
+
+    // Prepare data for visualization
+    const data = {};
+    result.rows.forEach(row => {
+      const saleMonth = row.sale_month.toISOString().slice(0, 7); // Format as Year-Month
+      if (!data[saleMonth]) {
+        data[saleMonth] = [];
+      }
+      data[saleMonth].push({
+        product_name: row.product_name,
+        quantity_sold: row.total_quantity_sold,
+      });
+    });
+
+    return res.json(data);
+
+  } catch (err) {
+    console.error('Error:', err);
+    return res.status(500).json({ error: 'Error in fetching product demand per month: ' + err.message });
+  }
+});
 
 
 

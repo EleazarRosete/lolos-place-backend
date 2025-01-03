@@ -78,60 +78,6 @@ def test_db():
 
 
 
-    
-@app.route('/highest-selling-products', methods=['GET'])
-@cross_origin(origins=["http://127.0.0.1:5000"])
-def product_demand_per_month():
-    try:
-        year = request.args.get('year')  # Capture year parameter from query string
-        month = request.args.get('month')  # Capture month parameter from query string
-        if not year or not month:
-            return jsonify({"error": "Year and month are required"}), 400  # Handle missing year or month
-        
-        # Connect to the database
-        with get_db_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    WITH monthly_sales AS (
-                        SELECT 
-                            product_name,
-                            DATE_TRUNC('month', date::DATE) AS sale_month,
-                            SUM(quantity_sold) AS total_quantity_sold
-                        FROM sales_data
-                        WHERE EXTRACT(YEAR FROM date::DATE) = 2024  -- Replace %s with the actual year
-                        AND EXTRACT(MONTH FROM date::DATE) = 12  -- Replace %s with the actual month
-                        GROUP BY product_name, DATE_TRUNC('month', date::DATE)
-                        ORDER BY sale_month, total_quantity_sold DESC
-                    )
-                    SELECT 
-                        sale_month,
-                        product_name,
-                        total_quantity_sold
-                    FROM monthly_sales;
-                """, (year, month))
-                data = cursor.fetchall()
-
-        if not data:
-            return jsonify({"error": "No sales data available for the given month and year"}), 404
-
-        # Prepare data for visualization
-        result = {}
-        for row in data:
-            month = row[0].strftime('%Y-%m')  # Format date as Year-Month
-            if month not in result:
-                result[month] = []
-            result[month].append({"product_name": row[1], "quantity_sold": row[2]})
-
-        return jsonify(result)
-
-    except psycopg2.Error as e:
-        print("Database error:", e)
-        return jsonify({"error": "Database error: " + str(e)}), 500
-    except Exception as e:
-        print("General error:", e)
-        return jsonify({"error": "Error in fetching product demand per month: " + str(e)}), 500
-
-
 
 @app.route('/sales-forecast', methods=['POST'])
 def sales_forecast():
@@ -300,59 +246,10 @@ def feedback_stats():
         return jsonify({"error": "Error fetching feedback stats"}), 500
 
 
-@app.route('/peak-hours-data', methods=['GET'])
-def peak_hours_data():
-    try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cursor:
-                # Execute the SQL query
-                cursor.execute("""
-                    SELECT TRIM(TO_CHAR(date, 'Day')) AS day_of_week,
-                           EXTRACT(HOUR FROM time AT TIME ZONE 'UTC') AS hour_of_day,
-                           COUNT(*) AS order_count
-                    FROM orders
-                    WHERE EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
-                    GROUP BY day_of_week, hour_of_day
-                    ORDER BY day_of_week, hour_of_day;
-                """)
-                data = cursor.fetchall()
 
-        # Log the query results for debugging
 
-        # Define days and peak hours
-        days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
-        hours = list(range(10, 22))  # Peak hours: 10 AM to 9 PM
 
-        # Initialize the data structure
-        order_data = {day: {hour: 0 for hour in hours} for day in days}
 
-        # Populate order_data with query results
-        for row in data:
-            day_of_week = row[0]  # Already trimmed in SQL
-            hour_of_day = int(row[1])
-            order_count = row[2]
-            if day_of_week in order_data:
-                order_data[day_of_week][hour_of_day] = order_count
-
-        # Find the peak hour for each day
-        highest_orders = {}
-        for day in days:
-            day_data = order_data[day]
-            highest_hour = max(day_data, key=day_data.get)  # Find the hour with the highest orders
-            highest_orders[day] = {
-                "hour": highest_hour,
-                "order_count": day_data[highest_hour]
-            }
-
-        # Return the response
-        return jsonify({"highest_orders": highest_orders})
-
-    except psycopg2.Error as e:
-        print("Database error:", e)
-        return jsonify({"error": "Database error: " + str(e)}), 500
-    except Exception as e:
-        print("General error:", e)
-        return jsonify({"error": "Error retrieving peak hours data: " + str(e)}), 500
 
 
 # Negative words that could appear in text
