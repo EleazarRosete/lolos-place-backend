@@ -482,7 +482,7 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
   const randomId = generateRandomId(28);
 
   // Define URLs based on user_id
-  const successUrl = user_id === 14 ? 'http://localhost:5173/admin/pos/successful' : `http://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
+  const successUrl = user_id === 14 ? 'http://localhost:5173/admin/pos/successful' : `http://lolos-place-frontend.onrender.com`;
   const cancelUrl = user_id === 14 ? 'http://localhost:5173/admin/pos/failed' : 'http://lolos-place-frontend.onrender.com';
 
   try {
