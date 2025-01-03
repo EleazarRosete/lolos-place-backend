@@ -121,7 +121,7 @@ router.get('/highest-selling-products', async (req, res) => {
 
 
 
-router.get('/sales-forecast', async (req, res) => {
+router.get('/call-sales-forecast', async (req, res) => {
   try {
     // Call the Flask /sales-forecast route using GET method
     const response = await axios.get('https://lolos-place-backend.onrender.com/sales-forecast'); // Flask server URL
@@ -139,7 +139,7 @@ router.get('/sales-forecast', async (req, res) => {
 
 
 
-router.get('/feedback-graph', async (req, res) => {
+router.get('/call-feedback-graph', async (req, res) => {
   try {
       // Call the Flask API
       const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-graph', null, {
@@ -159,7 +159,7 @@ router.get('/feedback-graph', async (req, res) => {
 
 
 
-router.get('/feedback-stats', async (req, res) => {
+router.get('/call-feedback-stats', async (req, res) => {
   try {
       // Call the Flask API
       const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-stats');
@@ -178,7 +178,7 @@ router.get('/feedback-stats', async (req, res) => {
 
 
 
-router.post('/api/analyze-sentiment', async (req, res) => {
+router.post('/api/call-analyze-sentiment', async (req, res) => {
   try {
       // Forward the JSON body to the Flask API with correct headers
       const response = await axios.post('https://lolos-place-backend.onrender.com/api/analyze-sentiment', req.body, {
