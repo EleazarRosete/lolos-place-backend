@@ -90,22 +90,22 @@ def product_demand_per_month():
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
                 cursor.execute("""
-                 WITH monthly_sales AS (
+                    WITH monthly_sales AS (
+                        SELECT 
+                            product_name,
+                            DATE_TRUNC('month', date::DATE) AS sale_month,
+                            SUM(quantity_sold) AS total_quantity_sold
+                        FROM sales_data
+                        WHERE EXTRACT(YEAR FROM date::DATE) = 2024  -- Replace %s with the actual year
+                        AND EXTRACT(MONTH FROM date::DATE) = 12  -- Replace %s with the actual month
+                        GROUP BY product_name, DATE_TRUNC('month', date::DATE)
+                        ORDER BY sale_month, total_quantity_sold DESC
+                    )
                     SELECT 
+                        sale_month,
                         product_name,
-                        DATE_TRUNC('month', date::DATE) AS sale_month,
-                        SUM(quantity_sold) AS total_quantity_sold
-                    FROM sales_data
-                    WHERE EXTRACT(YEAR FROM date::DATE) = %s  -- Filter by year
-                    AND EXTRACT(MONTH FROM date::DATE) = %s  -- Filter by month
-                    GROUP BY product_name, DATE_TRUNC('month', date::DATE)
-                    ORDER BY sale_month, total_quantity_sold DESC
-                 )
-                 SELECT 
-                    sale_month,
-                    product_name,
-                    total_quantity_sold
-                 FROM monthly_sales;
+                        total_quantity_sold
+                    FROM monthly_sales;
                 """, (year, month))
                 data = cursor.fetchall()
 
@@ -298,15 +298,15 @@ def feedback_stats():
         return jsonify({"error": "Error fetching feedback stats"}), 500
 
 
-
 @app.route('/peak-hours-data', methods=['GET'])
 def peak_hours_data():
     try:
         with get_db_connection() as conn:
             with conn.cursor() as cursor:
+                # Execute the SQL query
                 cursor.execute("""
-                    SELECT TO_CHAR(date, 'Day') AS day_of_week,
-                           EXTRACT(HOUR FROM time) AS hour_of_day,
+                    SELECT TRIM(TO_CHAR(date, 'Day')) AS day_of_week,
+                           EXTRACT(HOUR FROM time AT TIME ZONE 'UTC') AS hour_of_day,
                            COUNT(*) AS order_count
                     FROM orders
                     WHERE EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
@@ -315,37 +315,42 @@ def peak_hours_data():
                 """)
                 data = cursor.fetchall()
 
-        # Days and hours to structure the response
+        # Log the query results for debugging
+
+        # Define days and peak hours
         days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
         hours = list(range(10, 22))  # Peak hours: 10 AM to 9 PM
 
-        # Initialize the dictionary for storing order counts
+        # Initialize the data structure
         order_data = {day: {hour: 0 for hour in hours} for day in days}
 
         # Populate order_data with query results
         for row in data:
-            day_of_week = row[0].strip()  # Clean whitespace around day name
+            day_of_week = row[0]  # Already trimmed in SQL
             hour_of_day = int(row[1])
             order_count = row[2]
             if day_of_week in order_data:
                 order_data[day_of_week][hour_of_day] = order_count
 
-        # Extract the highest order count for each day along with the corresponding hour
+        # Find the peak hour for each day
         highest_orders = {}
         for day in days:
             day_data = order_data[day]
-            highest_hour = max(day_data, key=day_data.get)  # Hour with max orders
+            highest_hour = max(day_data, key=day_data.get)  # Find the hour with the highest orders
             highest_orders[day] = {
                 "hour": highest_hour,
                 "order_count": day_data[highest_hour]
             }
 
-        # Return the highest order count for each day
+        # Return the response
         return jsonify({"highest_orders": highest_orders})
 
+    except psycopg2.Error as e:
+        print("Database error:", e)
+        return jsonify({"error": "Database error: " + str(e)}), 500
     except Exception as e:
-        print("Error retrieving peak hours data:", e)
-        return jsonify({"error": "Error retrieving data"}), 500
+        print("General error:", e)
+        return jsonify({"error": "Error retrieving peak hours data: " + str(e)}), 500
 
 
 # Negative words that could appear in text
