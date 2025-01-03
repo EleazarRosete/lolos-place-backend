@@ -79,7 +79,7 @@ def test_db():
 
 
 
-@app.route('/sales-forecast', methods=['POST'])
+@app.route('/sales-forecast', methods=['GET'])
 def sales_forecast():
     try:
         # Connect to the database
@@ -144,13 +144,7 @@ def sales_forecast():
         }
 
         # Prepare historical sales data grouped by year and month
-        sales_per_month = []
-        for _, row in df.iterrows():
-            sales_per_month.append({
-                'year': int(row['year']),
-                'month': int(row['month']),
-                'total_gross_sales': row['total_gross_sales']
-            })
+        sales_per_month = df[['year', 'month', 'total_gross_sales']].to_dict(orient='records')
 
         # Prepare the response data
         response_data = {
@@ -162,10 +156,15 @@ def sales_forecast():
 
     except Exception as e:
         return jsonify({"error": "Error in forecasting sales: " + str(e)}), 500
+    
 
 
 
-@app.route('/feedback-graph', methods=['POST'])
+
+
+
+
+@app.route('/feedback-graph', methods=['GET'])
 def feedback_graph():
     try:
         with get_db_connection() as conn:
@@ -215,6 +214,18 @@ def feedback_graph():
         print("Error generating feedback graph:", e)
         return jsonify({"error": "Error generating graph"}), 500
 
+
+
+
+
+
+
+
+
+
+
+
+
 @app.route('/feedback-stats', methods=['GET'])
 def feedback_stats():
     try:
@@ -260,6 +271,9 @@ positive_with_negative_words = [
     "sinful",  # This could be used in a positive way when describing indulgence, like in desserts
     "bad"  # Sometimes 'bad' is used in a playful or indulgent context (e.g., "This is bad, but so good")
 ]
+
+
+
 
 @app.route('/api/analyze-sentiment', methods=['POST'])
 def analyze_sentiment():

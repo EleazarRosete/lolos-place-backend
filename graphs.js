@@ -121,6 +121,86 @@ router.get('/highest-selling-products', async (req, res) => {
 
 
 
+router.get('/sales-forecast', async (req, res) => {
+  try {
+    // Call the Flask /sales-forecast route using GET method
+    const response = await axios.get('https://lolos-place-backend.onrender.com/sales-forecast'); // Flask server URL
+    // Send the response data from Flask to the client
+    res.json(response.data);
+    console.log(response.data);
+  } catch (error) {
+    console.error('Error calling Flask sales-forecast route:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Error calling Flask sales-forecast route' });
+  }
+});
+
+
+
+
+
+
+router.get('/feedback-graph', async (req, res) => {
+  try {
+      // Call the Flask API
+      const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-graph', null, {
+          responseType: 'arraybuffer', // To handle binary data like SVG
+      });
+
+      // Set headers and send the SVG content
+      res.setHeader('Content-Type', 'image/svg+xml');
+      res.send(response.data);
+  } catch (error) {
+      console.error('Error calling Flask route:', error.response ? error.response.data : error.message);
+      res.status(500).json({ error: 'Error fetching feedback graph' });
+  }
+});
+
+
+
+
+
+router.get('/feedback-stats', async (req, res) => {
+  try {
+      // Call the Flask API
+      const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-stats');
+
+      // Forward the JSON data received from Flask
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Flask route:', error.response ? error.response.data : error.message);
+      res.status(500).json({ error: 'Error fetching feedback stats' });
+  }
+});
+
+
+
+
+
+
+
+router.post('/api/analyze-sentiment', async (req, res) => {
+  try {
+      // Forward the JSON body to the Flask API with correct headers
+      const response = await axios.post('https://lolos-place-backend.onrender.com/api/analyze-sentiment', req.body, {
+          headers: {
+              'Content-Type': 'application/json',
+          },
+      });
+
+      // Send the Flask API's response back to the client
+      res.json(response.data);
+  } catch (error) {
+      console.error('Error calling Flask route:', error.response ? error.response.data : error.message);
+      res.status(500).json({ error: 'Error analyzing sentiment' });
+  }
+});
+
+
+
+
+
+
+
 // Mounting the router on the main app
 app.use(router);
 
