@@ -1,6 +1,7 @@
 from flask import Flask, jsonify, request, send_file
 from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from flask_cors import CORS
+from flask_cors import cross_origin
 import plotly.graph_objects as go
 import plotly.io as pio
 import matplotlib.pyplot as plt
@@ -79,6 +80,7 @@ def test_db():
 
     
 @app.route('/highest-selling-products', methods=['GET'])
+@cross_origin(origins=["http://127.0.0.1:5000"])
 def product_demand_per_month():
     try:
         year = request.args.get('year')  # Capture year parameter from query string
