@@ -491,34 +491,29 @@ const cancelUrl = user_id === 14
   : 'https://lolos-place-frontend.onrender.com/';
 
 
-  try {
-    const response = await axios.post(
-        'https://api.paymongo.com/v1/checkout_sessions',
-        {
-            data: {
-                attributes: {
-                    send_email_receipt: false,
-                    show_line_items: true,
-                    line_items: formattedLineItems,
-                    payment_method_types: ['gcash'],
-                    success_url: successUrl,
-                    cancel_url: cancelUrl,
-                },
-            },
-        },
-        {
-            headers: {
-                accept: 'application/json',
-                'Content-Type': 'application/json',
-                Authorization: `Basic ${Buffer.from(PAYMONGO_SECRET_KEY).toString('base64')}`,
-            },
-        }
-    );
-    console.log('Payment session created:', response.data);
-} catch (error) {
-    console.error('Error creating payment session:', error);
-    // Handle the error (e.g., display message to the user)
-}
+ try {
+      const response = await axios.post(
+          'https://api.paymongo.com/v1/checkout_sessions',
+          {
+              data: {
+                  attributes: {
+                      send_email_receipt: false,
+                      show_line_items: true,
+                      line_items: formattedLineItems, 
+                      payment_method_types: ['gcash'],
+                      success_url: successUrl,
+                      cancel_url: cancelUrl,
+                  },
+              },
+          },
+          {
+              headers: {
+                  accept: 'application/json',
+                  'Content-Type': 'application/json',
+                  Authorization: `Basic ${Buffer.from(PAYMONGO_SECRET_KEY).toString('base64')}`, 
+              },
+          }
+      );
 
 
       const checkoutUrl = response.data.data.attributes.checkout_url;
