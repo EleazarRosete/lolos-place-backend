@@ -482,10 +482,16 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
   const randomId = generateRandomId(28);
 
   // Define URLs based on user_id
-  const successUrl = user_id === 14 ? 'http://localhost:5173/admin/pos/successful' : `http://localhost:5173/successpage?session_id=${randomId}`;
-  const cancelUrl = user_id === 14 ? 'http://localhost:5173/admin/pos/failed' : 'http://localhost:5173/';
+const successUrl = user_id === 14 
+  ? 'https://lolos-place-frontend.onrender.com/admin/pos/successful' 
+  : `https://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
 
-  try {
+const cancelUrl = user_id === 14 
+  ? 'https://lolos-place-frontend.onrender.com/admin/pos/failed' 
+  : 'https://lolos-place-frontend.onrender.com/';
+
+
+ try {
       const response = await axios.post(
           'https://api.paymongo.com/v1/checkout_sessions',
           {
@@ -508,6 +514,7 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
               },
           }
       );
+
 
       const checkoutUrl = response.data.data.attributes.checkout_url;
 
