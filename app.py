@@ -65,7 +65,7 @@ def test_db():
         cursor = conn.cursor()
 
         # Execute a simple query to test the connection
-        cursor.execute('SELECT 1;')
+        cursor.execute('SELECT * from orders;')
         result = cursor.fetchone()
 
         # Close the cursor and connection
