@@ -57,6 +57,8 @@ def get_db_connection():
 
 
 
+from datetime import time  # Import the time class
+
 @app.route('/test-db')
 def test_db():
     try:
@@ -65,16 +67,23 @@ def test_db():
         cursor = conn.cursor()
 
         # Execute a simple query to test the connection
-        cursor.execute(' SELECT EXTRACT(YEAR FROM CAST(date AS DATE)) AS year, EXTRACT(MONTH FROM CAST(date AS DATE)) AS month, SUM(gross_sales) AS total_gross_sales FROM sales_data WHERE EXTRACT(YEAR FROM CAST(date AS DATE)) >= 2019 GROUP BY year, month ORDER BY year, month;')
+        cursor.execute("SELECT * FROM orders;")
         result = cursor.fetchone()
+
+        # Serialize result to handle non-JSON serializable objects
+        if result:
+            serialized_result = tuple(str(value) if isinstance(value, time) else value for value in result)
+        else:
+            serialized_result = None
 
         # Close the cursor and connection
         cursor.close()
         conn.close()
 
-        return jsonify({'message': 'Database connected successfully', 'result': result})
+        return jsonify({'message': 'Database connected successfully', 'result': serialized_result})
     except Exception as e:
         return jsonify({'error': 'Failed to connect to the database', 'details': str(e)}), 500
+
 
 
 
