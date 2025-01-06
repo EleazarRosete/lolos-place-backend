@@ -197,7 +197,24 @@ router.post('/api/call-analyze-sentiment', async (req, res) => {
 
 
 
+router.get('/node-test-db', async (req, res) => {
+  try {
+    // Forward the request to the Flask API
+    const response = await axios.get('http://127.0.0.1:5000/test-db');
 
+    // Send the response data back to the client
+    res.json({
+      message: 'Data fetched successfully from Flask API',
+      data: response.data,
+    });
+  } catch (error) {
+    // Handle errors and send the appropriate response
+    res.status(500).json({
+      message: 'Failed to fetch data from Flask API',
+      error: error.response ? error.response.data : error.message,
+    });
+  }
+});
 
 
 
