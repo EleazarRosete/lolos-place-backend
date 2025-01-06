@@ -609,26 +609,42 @@ app.get('/api/top-best-sellers', async (req, res) => {
 
 
 app.get('/api/order-history', async (req, res) => {
-  const { user_id } = req.query; // Ensure you are using `user_id` from query params
-
-  if (!user_id) {
-    return res.status(400).json({ error: 'User ID is required.' });
-  }
+  const { user_id } = req.query;
 
   try {
-    // Query to fetch orders, including date and time from the orders table
-    const result = await pool.query(
-      `
-      SELECT o.order_id, o.user_id, o.mop, o.total_amount, o.date, o.time, o.delivery, o.reservation_id
+    // Base query for fetching orders, with optional filtering by user_id
+    const baseQuery = `
+      SELECT 
+        o.order_id, 
+        o.user_id, 
+        o.mop, 
+        o.total_amount, 
+        o.order_type, 
+        o.date, 
+        o.time, 
+        o.delivery, 
+        o.reservation_id, 
+        o.status, 
+        o.customer_name, 
+        o.number_of_people,
+        u.first_name, 
+        u.last_name, 
+        u.email, 
+        u.phone, 
+        u.address
       FROM orders o
-      WHERE o.user_id = $1
+      JOIN users u ON o.user_id = u.user_id
+      ${user_id ? 'WHERE o.user_id = $1' : ''}
       ORDER BY o.date DESC;
-      `,
-      [user_id]
-    );
+    `;
 
-    // Fetch the items for each order from the order_quantities table
+    const queryParams = user_id ? [user_id] : [];
+
+    const result = await pool.query(baseQuery, queryParams);
+
     const orderIds = result.rows.map(order => order.order_id);
+
+    // Fetch items related to the orders
     const itemsResult = await pool.query(
       `
       SELECT oq.order_id, oq.menu_id, oq.order_quantity, mi.name as menu_name
@@ -639,49 +655,48 @@ app.get('/api/order-history', async (req, res) => {
       [orderIds]
     );
 
-    // Fetch reservation details for orders that have a reservation_id
+    // Fetch reservations related to the orders
     const reservationResult = await pool.query(
       `
       SELECT r.reservation_id, r.reservation_date, r.reservation_time
       FROM reservations r
       WHERE r.reservation_id = ANY($1);
       `,
-      [orderIds]
+      [result.rows.map(order => order.reservation_id).filter(Boolean)]
     );
 
-    // Group the order items and combine with the orders
-    const groupedOrders = result.rows.reduce((acc, order) => {
-      const existingOrder = acc.find(o => o.order_id === order.order_id);
+    // Combine and structure the data
+    const groupedOrders = result.rows.map(order => {
       const orderItems = itemsResult.rows.filter(item => item.order_id === order.order_id);
-
-      // Get reservation details if the order is a reservation (not delivery)
       const reservationDetails = order.reservation_id
         ? reservationResult.rows.find(r => r.reservation_id === order.reservation_id)
         : null;
 
-      if (existingOrder) {
-        existingOrder.items.push(...orderItems); // Add items for the existing order
-      } else {
-        acc.push({
-          order_id: order.order_id,
-          date: order.date,  // Order date from the orders table
-          time: order.time,  // Order time from the orders table
-          total_amount: parseFloat(order.total_amount), // Ensure it's treated as a number
-          mop: order.mop,
-          delivery: order.delivery,
-          reservation_id: order.reservation_id,
-          reservation_date: reservationDetails ? reservationDetails.reservation_date : null, // Reservation date (if applicable)
-          reservation_time: reservationDetails ? reservationDetails.reservation_time : null, // Reservation time (if applicable)
-          items: orderItems, // Add the items for the new order
-        });
-      }
-      return acc;
-    }, []);
+      return {
+        order_id: order.order_id,
+        user_id: order.user_id,
+        date: order.date,
+        time: order.time,
+        total_amount: parseFloat(order.total_amount),
+        mop: order.mop,
+        delivery: order.delivery,
+        orderType: order.order_type,
+        reservation_id: order.reservation_id,
+        status: order.status,
+        customerName: order.customer_name,
+        numberOfPeople: order.number_of_people,
+        firstName: order.first_name,
+        lastName: order.last_name,
+        email: order.email,
+        phone: order.phone,
+        address: order.address,
+        reservation_date: reservationDetails ? reservationDetails.reservation_date : null,
+        reservation_time: reservationDetails ? reservationDetails.reservation_time : null,
+        items: orderItems,
+      };
+    });
 
-    // Log the groupedOrders in a readable format
-    console.log(JSON.stringify(groupedOrders, null, 2)); // Now it will log properly
-
-    res.json(groupedOrders); // Send the response as a JSON object
+    res.json(groupedOrders);
   } catch (error) {
     console.error("Error fetching order history:", error.message);
     res.status(500).json({ error: 'Failed to fetch order history. Please try again later.' });
