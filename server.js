@@ -484,7 +484,7 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
   // Define URLs based on user_id
 const successUrl = user_id === 14 
   ? 'https://lolos-place-frontend.onrender.com/admin/pos/successful' 
-  : `https://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
+  : 'https://youtube.com';
 
 const cancelUrl = user_id === 14 
   ? 'https://lolos-place-frontend.onrender.com/admin/pos/failed' 
