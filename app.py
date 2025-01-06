@@ -65,7 +65,7 @@ def test_db():
         cursor = conn.cursor()
 
         # Execute a simple query to test the connection
-        cursor.execute('SELECT * from orders;')
+        cursor.execute(' SELECT EXTRACT(YEAR FROM CAST(date AS DATE)) AS year, EXTRACT(MONTH FROM CAST(date AS DATE)) AS month, SUM(gross_sales) AS total_gross_sales FROM sales_data WHERE EXTRACT(YEAR FROM CAST(date AS DATE)) >= 2019 GROUP BY year, month ORDER BY year, month;')
         result = cursor.fetchone()
 
         # Close the cursor and connection
