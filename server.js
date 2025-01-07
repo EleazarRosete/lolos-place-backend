@@ -21,7 +21,7 @@ const graphs = require('./graphs');
 
 const app = express();
 
-app.get('/test-db', async (req, res) => {
+app.get('/test-db-node', async (req, res) => {
   try {
     const result = await pool.query('SELECT 1');
     res.json({ message: 'Database connected', result: result.rows });

@@ -59,7 +59,7 @@ def get_db_connection():
 
 from datetime import time  # Import the time class
 
-@app.route('/test-db')
+@app.route('/test-db-python')
 def test_db():
     try:
         # Establish a database connection

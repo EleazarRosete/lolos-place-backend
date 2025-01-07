@@ -6,7 +6,7 @@ const router = express.Router();
 const pool = require('./db'); 
 
 
-router.get('/peak-hours-data', async (req, res) => {
+app.get('/peak-hours-data', async (req, res) => {
   try {
     // Execute the SQL query
     const query = `
@@ -63,7 +63,7 @@ router.get('/peak-hours-data', async (req, res) => {
 
 
 
-router.get('/highest-selling-products', async (req, res) => {
+app.get('/highest-selling-products', async (req, res) => {
   try {
     const { year, month } = req.query;
 
@@ -121,7 +121,7 @@ router.get('/highest-selling-products', async (req, res) => {
 
 
 
-router.get('/call-sales-forecast', async (req, res) => {
+app.get('/call-sales-forecast', async (req, res) => {
   try {
     // Call the Flask /sales-forecast route using GET method
     const response = await axios.get('https://lolos-place-backend.onrender.com/sales-forecast'); // Flask server URL
@@ -139,7 +139,7 @@ router.get('/call-sales-forecast', async (req, res) => {
 
 
 
-router.get('/call-feedback-graph', async (req, res) => {
+app.get('/call-feedback-graph', async (req, res) => {
   try {
       // Call the Flask API
       const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-graph', null, {
@@ -159,7 +159,7 @@ router.get('/call-feedback-graph', async (req, res) => {
 
 
 
-router.get('/call-feedback-stats', async (req, res) => {
+app.get('/call-feedback-stats', async (req, res) => {
   try {
       // Call the Flask API
       const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-stats');
@@ -178,7 +178,7 @@ router.get('/call-feedback-stats', async (req, res) => {
 
 
 
-router.post('/api/call-analyze-sentiment', async (req, res) => {
+app.post('/api/call-analyze-sentiment', async (req, res) => {
   try {
       // Forward the JSON body to the Flask API with correct headers
       const response = await axios.post('https://lolos-place-backend.onrender.com/api/analyze-sentiment', req.body, {
@@ -197,10 +197,10 @@ router.post('/api/call-analyze-sentiment', async (req, res) => {
 
 
 
-router.get('/node-test-db', async (req, res) => {
+app.get('/node-test-db', async (req, res) => {
   try {
     // Forward the request to the Flask API
-    const response = await axios.get('http://127.0.0.1:5000/test-db');
+    const response = await axios.get('https://lolos-place-backend.onrender.com/test-db');
 
     // Send the response data back to the client
     res.json({
