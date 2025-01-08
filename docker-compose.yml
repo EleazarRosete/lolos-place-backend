@@ -1,16 +1,28 @@
-version: "3.8"
 services:
-  flask:
+  app:
     build:
       context: .
       dockerfile: Dockerfile
     ports:
-      - "5000:5000"
+      - "${APP_PORT}:5001"
+      - "${PORT}:5000"
+      - "5432:5432"
     environment:
-      - PORT=5000
-  node:
-    build:
-      context: ./node-backend
-      dockerfile: Dockerfile
-    ports:
-      - "3000:3000"
+      - PORT=${PORT}
+      - DATABASE_URL=${DATABASE_URL}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_HOST=localhost
+      - DB_DATABASE=${DB_DATABASE}
+      - DB_PORT=5432
+      - ADMIN_ID=${ADMIN_ID}
+      - PAYMONGO_SECRET_KEY=${PAYMONGO_SECRET_KEY}
+    networks:
+      - backend_network
+
+volumes:
+  pg_data:
+
+networks:
+  backend_network:
+    driver: bridge

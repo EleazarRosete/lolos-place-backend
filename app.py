@@ -57,9 +57,16 @@ def get_db_connection():
 
 
 
+@app.route('/')
+def home():
+    return 'Flask app is working!'
+
+
+
+
 from datetime import time  # Import the time class
 
-@app.route('/test-db-python')
+@app.route('/test-db')
 def test_db():
     try:
         # Establish a database connection
@@ -327,4 +334,4 @@ def analyze_sentiment():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, port=app_port)
+    app.run(host='0.0.0.0', port=5001, debug=True)

@@ -8,6 +8,7 @@ const bcrypt = require('bcryptjs');
 const axios = require('axios');
 const pool = require('./db'); 
 const admin = process.env.ADMIN_ID;
+const { spawn } = require('child_process'); 
 
 
 const feedback = require('./feedback/routes');
@@ -21,10 +22,42 @@ const graphs = require('./graphs');
 
 const app = express();
 
-app.get('/test-db-node', async (req, res) => {
+
+
+
+function startPythonScript() {
+  const pythonProcess = spawn('python', ['./app.py']);  // Adjust path if necessary
+  
+  pythonProcess.stdout.on('data', (data) => {
+      console.log(`stdout: ${data}`);
+  });
+
+  pythonProcess.stderr.on('data', (data) => {
+      console.error(`stderr: ${data}`);
+  });
+
+  pythonProcess.on('close', (code) => {
+      console.log(`Python script exited with code ${code}`);
+  });
+}
+
+// Optionally, start the Python script as soon as the server starts
+startPythonScript();
+
+
+
+
+
+
+
+
+
+
+
+app.get('/test-db', async (req, res) => {
   try {
     const result = await pool.query('SELECT 1');
-    res.json({ message: 'Database connected', result: result.rows });
+    res.json({ message: 'Database connected node', result: result.rows });
   } catch (error) {
     console.error(error);
     res.status(500).send('Database connection failed');
@@ -707,4 +740,7 @@ app.get('/api/order-history', async (req, res) => {
 
 
 
-app.listen(port, () => console.log(`App listening on port ${port}`));
+app.listen(port, '0.0.0.0', () => {
+  console.log(`App listening on port ${port}`);
+});
+
