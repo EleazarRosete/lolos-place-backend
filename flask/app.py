@@ -18,7 +18,7 @@ import os
 from urllib.parse import urlparse
 
 # Load environment variables from the .env file
-load_dotenv(dotenv_path='./backend/.env')
+load_dotenv(dotenv_path='../.env')
 app_port = os.getenv('APP_PORT')
 
 
@@ -41,19 +41,20 @@ if DATABASE_URL:
         'port': url.port,
         'sslmode': 'require'  # Enforce SSL for production
     }
-# else:
-#     # Default to local development settings
-#     db_config = {
-#         'dbname': os.getenv('DB_DATABASE', 'lolos-place'),
-#         'user': os.getenv('DB_USER', 'postgres'),
-#         'password': os.getenv('DB_PASSWORD', 'password'),
-#         'host': os.getenv('DB_HOST', 'localhost'),
-#         'port': os.getenv('DB_PORT', '5433')
-#     }
+else:
+    # Default to environment variables for local development
+    db_config = {
+        'dbname': os.getenv('DB_DATABASE', 'lolos_place_database'),
+        'user': os.getenv('DB_USER', 'lolos_place_database_user'),
+        'password': os.getenv('DB_PASSWORD', 'kxwp1hAcA2psjJr8fNsqQSdWjreTBC5F'),
+        'host': os.getenv('DB_HOST', 'localhost'),
+        'port': os.getenv('DB_PORT', '5432')
+    }
 
 # Function to get the database connection
 def get_db_connection():
     return psycopg2.connect(**db_config)
+
 
 
 
@@ -70,6 +71,7 @@ from datetime import time  # Import the time class
 def test_db():
     try:
         # Establish a database connection
+
         conn = get_db_connection()
         cursor = conn.cursor()
 
@@ -333,5 +335,5 @@ def analyze_sentiment():
 
 
 
-if __name__ == "__main__":
-    app.run(host='0.0.0.0', port=5001, debug=True)
+if __name__ == '__main__':
+    app.run(host='0.0.0.0', port=app_port)

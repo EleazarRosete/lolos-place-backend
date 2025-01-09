@@ -1,38 +1,40 @@
-# Use a Python image as the base
-FROM python:3.10-slim AS backend
+# Base image for Node.js
+FROM node:18
 
-WORKDIR /app
+# Install Python, pip, and virtualenv
+RUN apt-get update && apt-get install -y python3 python3-pip python3-venv
 
-# Install system dependencies for Python, Node.js, PostgreSQL client, and Supervisor
-RUN apt-get update && apt-get install -y \
-    curl \
-    supervisor \
-    build-essential \
-    libpq-dev \
-    python3-dev \
-    postgresql-client \
-    && curl -fsSL https://deb.nodesource.com/setup_16.x | bash - \
-    && apt-get install -y nodejs
+# Set working directory for the backend
+WORKDIR /app/backend
 
-# Create the /app/logs directory for logging
-RUN mkdir -p /app/logs
+# Copy the environment file
+COPY .env ./
 
 # Install Node.js dependencies
-COPY ./package*.json ./ 
+WORKDIR /app/backend/node
+COPY node/package.json node/package-lock.json ./
 RUN npm install
 
-# Install Python dependencies
-COPY requirements.txt ./ 
-RUN pip install --no-cache-dir -r requirements.txt
+# Install Flask dependencies and set up a virtual environment
+WORKDIR /app/backend/flask
+COPY flask/requirements.txt ./
 
-# Copy all other application files
-COPY . /app
+# Create a virtual environment for Flask
+RUN python3 -m venv /app/backend/flask/venv
 
-# Expose the ports for Flask, Node.js, and PostgreSQL
-EXPOSE 5001 5000 5432
+# Install the required Python packages inside the virtual environment
+RUN /app/backend/flask/venv/bin/pip install --upgrade pip
+RUN /app/backend/flask/venv/bin/pip install -r requirements.txt
 
-# Copy supervisord.conf file for process management
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# Ensure Flask is installed in the virtual environment (optional check)
+RUN /app/backend/flask/venv/bin/pip show flask
 
-# Default command to run both Node.js, Flask services, and PostgreSQL client using supervisord
-CMD ["supervisord", "-n"]
+# Copy the rest of the project files
+WORKDIR /app/backend
+COPY . .
+
+# Expose Flask and Node.js ports
+EXPOSE 10000 5000
+
+# Use a shell script to run both Flask and Node.js
+CMD ["./render-start.sh"]

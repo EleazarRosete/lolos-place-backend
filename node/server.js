@@ -1,14 +1,14 @@
-require('dotenv').config({ path: './backend/.env' });
+require('dotenv').config({ path: '../.env' });
 
 const express = require('express');
-const cors = require('cors'); 
+const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const bcrypt = require('bcryptjs');
 const axios = require('axios');
-const pool = require('./db'); 
+const pool = require('./db');
 const admin = process.env.ADMIN_ID;
-const { spawn } = require('child_process'); 
+const { spawn } = require('child_process');
 
 
 const feedback = require('./feedback/routes');
@@ -25,30 +25,37 @@ const app = express();
 
 
 
-function startPythonScript() {
-  const pythonProcess = spawn('python', ['./app.py']);  // Adjust path if necessary
-  
-  pythonProcess.stdout.on('data', (data) => {
-      console.log(`stdout: ${data}`);
-  });
+// function startPythonScript() {
+//   const pythonProcess = spawn('python', ['../flask/app.py']);  // Adjust path if necessary
 
-  pythonProcess.stderr.on('data', (data) => {
-      console.error(`stderr: ${data}`);
-  });
+//   pythonProcess.stdout.on('data', (data) => {
+//     console.log(`stdout: ${data}`);
+//   });
 
-  pythonProcess.on('close', (code) => {
-      console.log(`Python script exited with code ${code}`);
-  });
-}
+//   pythonProcess.stderr.on('data', (data) => {
+//     console.error(`stderr: ${data}`);
+//   });
 
-// Optionally, start the Python script as soon as the server starts
-startPythonScript();
+//   pythonProcess.on('close', (code) => {
+//     console.log(`Python script exited with code ${code}`);
+//   });
+// }
 
-
+// // Optionally, start the Python script as soon as the server starts
+// startPythonScript();
 
 
 
 
+
+app.use('/flask', async (req, res) => {
+  try {
+      const flaskResponse = await axios.get(`http://localhost:10000${req.originalUrl}`);
+      res.send(flaskResponse.data);
+  } catch (error) {
+      res.status(500).send('Error connecting to Flask');
+  }
+});
 
 
 
@@ -69,32 +76,32 @@ const port = process.env.PORT;  // Now using the PORT from .env
 // Use the PayMongo secret key from .env
 const PAYMONGO_SECRET_KEY = process.env.PAYMONGO_SECRET_KEY;
 
-app.use(cors()); 
+app.use(cors());
 app.use('/uploads', express.static('uploads'));
 app.use(express.json());
 
 const upload = multer({ dest: 'uploads/' }); // Directory where files will be stored
 
 app.post('/upload', upload.single('file'), (req, res) => {
-    const filePath = `http://localhost:5000/uploads/${req.file.filename}`; // Construct the URL
-    res.json({ filePath }); // Send back the file path as JSON
+  const filePath = `http://localhost:5000/uploads/${req.file.filename}`; // Construct the URL
+  res.json({ filePath }); // Send back the file path as JSON
 });
 
 // New endpoint to save the image URL to the database
 app.post('/save-image-url', async (req, res) => {
-    const { url } = req.body; // Get the URL from the request body
+  const { url } = req.body; // Get the URL from the request body
 
-    try {
-        // Insert the URL into the database
-        const query = 'INSERT INTO your_table_name(image_url) VALUES($1) RETURNING *';
-        const values = [url];
-        const result = await pool.query(query, values);
-        
-        res.status(201).json({ message: 'Image URL saved successfully', data: result.rows[0] });
-    } catch (error) {
-        console.error('Error saving image URL:', error);
-        res.status(500).json({ message: 'Error saving image URL' });
-    }
+  try {
+    // Insert the URL into the database
+    const query = 'INSERT INTO your_table_name(image_url) VALUES($1) RETURNING *';
+    const values = [url];
+    const result = await pool.query(query, values);
+
+    res.status(201).json({ message: 'Image URL saved successfully', data: result.rows[0] });
+  } catch (error) {
+    console.error('Error saving image URL:', error);
+    res.status(500).json({ message: 'Error saving image URL' });
+  }
 });
 
 // Serve static files from the uploads directory
@@ -102,11 +109,11 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.use('/feedback', feedback);
 app.use('/menu', menu);
-app.use('/order',order);
-app.use('/payment',payment);
-app.use('/sales',sales);
-app.use('/purchases',purchases);
-app.use('/graphs',graphs);
+app.use('/order', order);
+app.use('/payment', payment);
+app.use('/sales', sales);
+app.use('/purchases', purchases);
+app.use('/graphs', graphs);
 
 
 
@@ -148,7 +155,7 @@ app.post('/api/feedback', async (req, res) => {
 
 
 
-  
+
 
 
 // Test route
@@ -210,81 +217,81 @@ app.post('/api/login', async (req, res) => {
 
 
 app.post('/api/signup', async (req, res) => {
-    const { firstName, lastName, address, email, phone, password } = req.body;
-  
-    try {
-      // Check if user already exists
-      const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
-      if (existingUser.rows.length > 0) {
-        return res.status(400).json({ message: 'User already exists' });
-      }
-  
-      // Hash the password
-      const hashedPassword = await bcrypt.hash(password, 10);
-  
-      // Create a new user
-      const newUser = await pool.query(
-        'INSERT INTO users (first_name, last_name, address, email, phone, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-        [firstName, lastName, address, email, phone, hashedPassword]
-      );
-  
-      const user = newUser.rows[0];
-  
-      // Respond with the new user details (omit password)
-      res.status(201).json({
-        user: { id: user.user_id, firstName: user.first_name, lastName: user.last_name, email: user.email },
-      });
-    } catch (error) {
-      console.error(error);
-      res.status(500).json({ message: 'Internal server error' });
+  const { firstName, lastName, address, email, phone, password } = req.body;
+
+  try {
+    // Check if user already exists
+    const existingUser = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    if (existingUser.rows.length > 0) {
+      return res.status(400).json({ message: 'User already exists' });
     }
-  });
+
+    // Hash the password
+    const hashedPassword = await bcrypt.hash(password, 10);
+
+    // Create a new user
+    const newUser = await pool.query(
+      'INSERT INTO users (first_name, last_name, address, email, phone, password) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
+      [firstName, lastName, address, email, phone, hashedPassword]
+    );
+
+    const user = newUser.rows[0];
+
+    // Respond with the new user details (omit password)
+    res.status(201).json({
+      user: { id: user.user_id, firstName: user.first_name, lastName: user.last_name, email: user.email },
+    });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Internal server error' });
+  }
+});
 
 app.post('/api/changeCustomerPassword', async (req, res) => {
-    const { id, oldPassword, newPassword, confirmNewPassword } = req.body;
+  const { id, oldPassword, newPassword, confirmNewPassword } = req.body;
 
-    // Validate input
-    if (!id || !oldPassword || !newPassword || !confirmNewPassword) {
-        return res.status(400).json({ message: 'All fields are required.' });
+  // Validate input
+  if (!id || !oldPassword || !newPassword || !confirmNewPassword) {
+    return res.status(400).json({ message: 'All fields are required.' });
+  }
+
+  if (newPassword !== confirmNewPassword) {
+    return res.status(400).json({ message: 'New and confirm password do not match.' });
+  }
+
+  try {
+    // Fetch the current password hash from the database
+    const result = await pool.query(
+      'SELECT password FROM users WHERE user_id = $1',
+      [id]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Customer not found.' });
     }
 
-    if (newPassword !== confirmNewPassword) {
-        return res.status(400).json({ message: 'New and confirm password do not match.' });
+    const user = result.rows[0];
+
+    // Compare old password with the stored hash
+    const isMatch = await bcrypt.compare(oldPassword, user.password);
+    if (!isMatch) {
+      return res.status(401).json({ message: 'Old password is incorrect.' });
     }
 
-    try {
-        // Fetch the current password hash from the database
-        const result = await pool.query(
-            'SELECT password FROM users WHERE user_id = $1',
-            [id]
-        );
+    // Hash the new password
+    const hashedNewPassword = await bcrypt.hash(newPassword, 10); // 10 is the salt rounds
 
-        if (result.rows.length === 0) {
-            return res.status(404).json({ message: 'Customer not found.' });
-        }
+    // Update the password in the database
+    await pool.query(
+      'UPDATE users SET password = $1 WHERE user_id = $2',
+      [hashedNewPassword, id]
+    );
 
-        const user = result.rows[0];
-
-        // Compare old password with the stored hash
-        const isMatch = await bcrypt.compare(oldPassword, user.password);
-        if (!isMatch) {
-            return res.status(401).json({ message: 'Old password is incorrect.' });
-        }
-
-        // Hash the new password
-        const hashedNewPassword = await bcrypt.hash(newPassword, 10); // 10 is the salt rounds
-
-        // Update the password in the database
-        await pool.query(
-            'UPDATE users SET password = $1 WHERE user_id = $2',
-            [hashedNewPassword, id]
-        );
-
-        res.status(200).json({ message: 'Password changed successfully!' });
-    } catch (error) {
-        console.error('Error changing password:', error);
-        res.status(500).json({ message: 'Error changing password', error: error.message });
-    }
+    res.status(200).json({ message: 'Password changed successfully!' });
+  } catch (error) {
+    console.error('Error changing password:', error);
+    res.status(500).json({ message: 'Error changing password', error: error.message });
+  }
 });
 
 app.post('/api/changeCustomerDetails', async (req, res) => {
@@ -292,44 +299,44 @@ app.post('/api/changeCustomerDetails', async (req, res) => {
 
   // Validate input
   if (!id || !email || !phone || !address) {
-      return res.status(400).json({ message: 'All fields are required.' });
+    return res.status(400).json({ message: 'All fields are required.' });
   }
 
   try {
-      // Fetch the current password hash from the database
-      const result = await pool.query(
-          'SELECT * FROM users WHERE user_id = $1',
-          [id]
-      );
+    // Fetch the current password hash from the database
+    const result = await pool.query(
+      'SELECT * FROM users WHERE user_id = $1',
+      [id]
+    );
 
-      if (result.rows.length === 0) {
-          return res.status(404).json({ message: 'Customer not found.' });
-      }else {
-        await pool.query(
-          'UPDATE users SET email = $1, phone = $2, address = $3 WHERE user_id = $4',
-          [email, phone, address, id]
+    if (result.rows.length === 0) {
+      return res.status(404).json({ message: 'Customer not found.' });
+    } else {
+      await pool.query(
+        'UPDATE users SET email = $1, phone = $2, address = $3 WHERE user_id = $4',
+        [email, phone, address, id]
       );
       res.status(200).json({ message: 'Changed successfully!' });
-      }
+    }
 
   } catch (error) {
-      console.error('Error changing details:', error);
-      res.status(500).json({ message: 'Error changing details', error: error.message });
+    console.error('Error changing details:', error);
+    res.status(500).json({ message: 'Error changing details', error: error.message });
   }
 });
 
-  
-  app.get('/api/menu', async (req, res) => {
-    try {
-      const result = await pool.query('SELECT * FROM menu_items');
-      res.json(result.rows); // Send the rows as JSON
-    } catch (error) {
-      console.error('Error fetching menu items:', error);
-      res.status(500).json({ error: 'Server error' });
-    }
-  });
 
-  // API endpoint to save the order
+app.get('/api/menu', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM menu_items');
+    res.json(result.rows); // Send the rows as JSON
+  } catch (error) {
+    console.error('Error fetching menu items:', error);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// API endpoint to save the order
 app.post('/api/web-orders', async (req, res) => {
   const { name, address, contact, totalAmount, items } = req.body;
 
@@ -356,7 +363,7 @@ app.post('/api/orders', async (req, res) => {
 
     // Destructure order and delivery details from request body
     const { cart, userId, mop, totalAmount, date, time, deliveryLocation, deliveryStatus } = req.body;
-    
+
     // Get the current date and time in the correct format
     const currentDate = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
     const currentTime = new Date().toTimeString().split(' ')[0]; // HH:MM:SS
@@ -427,7 +434,7 @@ app.post('/api/reservations', async (req, res) => {
     const paymentResult = await pool.query('UPDATE payment SET payment_status = $1 WHERE user_id = $2', ['paid', userId])
     if (paymentResult.rowCount === 0) {
       return res.status(400).json({ message: 'No payment found for the customer' });
-  }
+    }
 
     // Insert reservation into reservations table
     const reservationQuery = `
@@ -494,8 +501,8 @@ const generateRandomId = (length) => {
   const characters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
   let result = '';
   for (let i = 0; i < length; i++) {
-      const randomIndex = Math.floor(Math.random() * characters.length);
-      result += characters[randomIndex];
+    const randomIndex = Math.floor(Math.random() * characters.length);
+    result += characters[randomIndex];
   }
   return result;
 };
@@ -504,64 +511,64 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
   const { user_id, lineItems } = req.body;
 
   const formattedLineItems = lineItems.map((product) => {
-      return {
-          currency: 'PHP',
-          amount: Math.round(product.price * 100), 
-          name: product.name,
-          quantity: product.quantity,
-      };
+    return {
+      currency: 'PHP',
+      amount: Math.round(product.price * 100),
+      name: product.name,
+      quantity: product.quantity,
+    };
   });
 
   const randomId = generateRandomId(28);
 
   // Define URLs based on user_id
-const successUrl = user_id === 14 
-  ? 'https://lolos-place-frontend.onrender.com/admin/pos/successful' 
-  : `https://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
+  const successUrl = user_id === 14
+    ? 'https://lolos-place-frontend.onrender.com/admin/pos/successful'
+    : `https://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
 
-const cancelUrl = user_id === 14 
-  ? 'https://lolos-place-frontend.onrender.com/admin/pos/failed' 
-  : 'https://youtube.com/';
+  const cancelUrl = user_id === 14
+    ? 'https://lolos-place-frontend.onrender.com/admin/pos/failed'
+    : 'https://youtube.com/';
 
 
- try {
-      const response = await axios.post(
-          'https://api.paymongo.com/v1/checkout_sessions',
-          {
-              data: {
-                  attributes: {
-                      send_email_receipt: false,
-                      show_line_items: true,
-                      line_items: formattedLineItems, 
-                      payment_method_types: ['gcash'],
-                      success_url: successUrl,
-                      cancel_url: cancelUrl,
-                  },
-              },
+  try {
+    const response = await axios.post(
+      'https://api.paymongo.com/v1/checkout_sessions',
+      {
+        data: {
+          attributes: {
+            send_email_receipt: false,
+            show_line_items: true,
+            line_items: formattedLineItems,
+            payment_method_types: ['gcash'],
+            success_url: successUrl,
+            cancel_url: cancelUrl,
           },
-          {
-              headers: {
-                  accept: 'application/json',
-                  'Content-Type': 'application/json',
-                  Authorization: `Basic ${Buffer.from(PAYMONGO_SECRET_KEY).toString('base64')}`, 
-              },
-          }
-      );
-
-
-      const checkoutUrl = response.data.data.attributes.checkout_url;
-
-      if (!checkoutUrl) {
-          return res.status(500).json({ error: 'Checkout URL not found in response' });
+        },
+      },
+      {
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${Buffer.from(PAYMONGO_SECRET_KEY).toString('base64')}`,
+        },
       }
+    );
 
-      const client = await pool.connect();
 
-      try {
-          await client.query('BEGIN');
+    const checkoutUrl = response.data.data.attributes.checkout_url;
 
-          // UPSERT query
-          const query = `
+    if (!checkoutUrl) {
+      return res.status(500).json({ error: 'Checkout URL not found in response' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // UPSERT query
+      const query = `
               INSERT INTO payment (user_id, session_id, payment_status)
               VALUES ($1, $2, $3)
               ON CONFLICT (user_id) 
@@ -569,22 +576,22 @@ const cancelUrl = user_id === 14
                   session_id = EXCLUDED.session_id,
                   payment_status = EXCLUDED.payment_status;
           `;
-          const values = [user_id, randomId, 'pending'];
+      const values = [user_id, randomId, 'pending'];
 
-          await client.query(query, values);
-          await client.query('COMMIT'); // Commit the transaction
-      } catch (error) {
-          await client.query('ROLLBACK'); // Rollback in case of error
-          console.error('Error inserting/updating payment:', error.message);
-          return res.status(500).json({ error: 'Failed to insert/update payment', details: error.message });
-      } finally {
-          client.release(); // Release the connection back to the pool
-      }
+      await client.query(query, values);
+      await client.query('COMMIT'); // Commit the transaction
+    } catch (error) {
+      await client.query('ROLLBACK'); // Rollback in case of error
+      console.error('Error inserting/updating payment:', error.message);
+      return res.status(500).json({ error: 'Failed to insert/update payment', details: error.message });
+    } finally {
+      client.release(); // Release the connection back to the pool
+    }
 
-      res.status(200).json({ url: checkoutUrl });
+    res.status(200).json({ url: checkoutUrl });
   } catch (error) {
-      console.error('Error creating checkout session:', error.response ? error.response.data : error.message);
-      res.status(500).json({ error: 'Failed to create checkout session', details: error.response ? error.response.data : error.message });
+    console.error('Error creating checkout session:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to create checkout session', details: error.response ? error.response.data : error.message });
   }
 });
 
@@ -594,21 +601,21 @@ app.get('/api/check-payment-status/:user_id', async (req, res) => {
   const { user_id } = req.params;
 
   try {
-      const client = await pool.connect();
-      const query = 'SELECT session_id, payment_status FROM payment WHERE user_id = $1';
-      const result = await client.query(query, [user_id]);
+    const client = await pool.connect();
+    const query = 'SELECT session_id, payment_status FROM payment WHERE user_id = $1';
+    const result = await client.query(query, [user_id]);
 
-      if (result.rows.length > 0) {
-          const { session_id, payment_status } = result.rows[0];
-          res.status(200).json({ session_id, payment_status });
-      } else {
-          res.status(200).json({ exists: false });
-      }
+    if (result.rows.length > 0) {
+      const { session_id, payment_status } = result.rows[0];
+      res.status(200).json({ session_id, payment_status });
+    } else {
+      res.status(200).json({ exists: false });
+    }
 
-      client.release();
+    client.release();
   } catch (error) {
-      console.error('Error checking payment status:', error.message);
-      res.status(500).json({ error: 'Internal server error' });
+    console.error('Error checking payment status:', error.message);
+    res.status(500).json({ error: 'Internal server error' });
   }
 });
 
@@ -740,7 +747,7 @@ app.get('/api/order-history', async (req, res) => {
 
 
 
-app.listen(port, '0.0.0.0', () => {
-  console.log(`App listening on port ${port}`);
+app.listen(port, () => {
+  console.log(`Node.js app running on port ${port}`);
 });
 
