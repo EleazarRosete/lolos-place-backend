@@ -34,7 +34,7 @@ WORKDIR /app/backend
 COPY . .
 
 # Expose Flask and Node.js ports
-EXPOSE 10000 5000
+EXPOSE 5000 10000
 
 # Use a shell script to run both Flask and Node.js
 CMD ["./render-start.sh"]

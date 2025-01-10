@@ -1,0 +1,265 @@
+[33mcommit baacbf1cd9734f893d74e1c0469a3a5cc962c193[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 9 16:13:32 2025 +0800
+
+    updated for flask
+
+[33mcommit e0629be7e4edb440aba3eee4966abe33cb1fdf8b[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 9 16:06:38 2025 +0800
+
+    updated for flask
+
+[33mcommit d13ce33fa6d4ac7011c2d739997804e545ec3f8a[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 9 15:37:03 2025 +0800
+
+    updated docker
+
+[33mcommit 83da0ba6cdb4b2a30a47e666bd49e6748cbec759[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Wed Jan 8 18:21:29 2025 +0800
+
+    updated server js
+
+[33mcommit 27a7258e90d8ea5a30a481b0840b1cc0645aedc6[m
+Merge: f62b5d6da d2d4fbfd9
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Tue Jan 7 18:16:59 2025 +0800
+
+    Merge branch 'main' of https://github.com/EleazarRosete/lolos-place-backend
+
+[33mcommit f62b5d6dad0f027fddb78b0c1a038d9590817ffa[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Tue Jan 7 18:16:39 2025 +0800
+
+    docker added
+
+[33mcommit d2d4fbfd92f7ecb6ec745092653a1a2c6de6fa21[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Tue Jan 7 00:29:26 2025 +0800
+
+    order-history
+
+[33mcommit 308dcd9dd82a45e5aa41ac0fe8b52c2c8fdea5f4[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Tue Jan 7 00:17:27 2025 +0800
+
+    Update server.js
+
+[33mcommit 041cd21fdd1fc1c241f96b2dcb74faf9586a9a51[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Mon Jan 6 23:39:44 2025 +0800
+
+    Update server.js
+
+[33mcommit 0129c9834138cc0953f0bed479706fb439d5c88e[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Mon Jan 6 23:07:26 2025 +0800
+
+    Update server.js
+
+[33mcommit fe217fd8afbf05b45ee8f7123ae79fe4d24bdf0d[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Mon Jan 6 22:56:53 2025 +0800
+
+    Update server.js
+
+[33mcommit 473d00eb8ac93400de2bd30654af58f76e2d7903[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Mon Jan 6 22:42:34 2025 +0800
+
+    Update server.js
+
+[33mcommit d3ecfe0de196f87dc9caf0064dd5a5b1d1a4164f[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Mon Jan 6 20:04:05 2025 +0800
+
+    modifyng
+
+[33mcommit c3e250318ba80b5606afb6ddf476d5a6344d633a[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Mon Jan 6 19:57:07 2025 +0800
+
+    updated test db
+
+[33mcommit b14254d646bc6e0245da4a7195585ec0e00c7d23[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Mon Jan 6 19:49:00 2025 +0800
+
+    updated test
+
+[33mcommit f4021cbe3b294902b1d5c7a2fc9ee0a6310fe63c[m
+Merge: e504984f7 355b55331
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Sat Jan 4 14:56:40 2025 +0800
+
+    Merge branch 'main' of https://github.com/EleazarRosete/lolos-place-backend
+
+[33mcommit e504984f77fd9f9b8c8b86156a781b23ec816458[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Sat Jan 4 14:56:08 2025 +0800
+
+    sample test-db
+
+[33mcommit 355b55331c80095167ca05c8a9961af689b2886c[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Sat Jan 4 01:46:23 2025 +0800
+
+    Update server.js
+
+[33mcommit 3013ba86559432be158f8fa65015f79966134d02[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Sat Jan 4 01:39:54 2025 +0800
+
+    try
+
+[33mcommit 396946fe3c6b0be071892c03d25b0ce61e7304e0[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Sat Jan 4 01:34:18 2025 +0800
+
+    Update server.js
+
+[33mcommit 0fadd4b7d55cfbab4f5721c716719677f5f61397[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Sat Jan 4 01:22:56 2025 +0800
+
+    no successpage for now
+
+[33mcommit bb22c531bf13ae2dffbc40670689d966bfec301c[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Sat Jan 4 01:05:45 2025 +0800
+
+    Update server.js
+
+[33mcommit f97ed20da3829125921d7d59873f451ea0083a4a[m
+Author: meh <103293269+mekelcruzz@users.noreply.github.com>
+Date:   Sat Jan 4 00:52:28 2025 +0800
+
+    https://lolos-place-frontend.onrender.com/
+
+[33mcommit 2e2f670e27627f7381df945b0cb3fd9753dcbf52[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 19:26:41 2025 +0800
+
+    updated forecast sales and customer reviews
+
+[33mcommit a68beaf089e6c7b8dde3566e7ff2a6631bf2b161[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 18:43:21 2025 +0800
+
+    updated forecast sales and customer reviews
+
+[33mcommit 6d36d1725f619467f91e02a1a79ea4b05035d6f7[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 14:47:28 2025 +0800
+
+    updated peak hours and product demand
+
+[33mcommit a5635ba3cdc7d21d544997a00dff5d39dab790b4[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 13:59:20 2025 +0800
+
+    updated graphs, app, and server
+
+[33mcommit d1e50699481c63292ac98d8dfaa0beab928c4d13[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 13:51:02 2025 +0800
+
+    fixed app.py
+
+[33mcommit 904d9e8539b7610e3128709c03dd0e05d4206778[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 13:31:19 2025 +0800
+
+    fixed graphs api
+
+[33mcommit 6a59a8035bd3c186eff7864493ed883fd8a3bca5[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Fri Jan 3 13:28:40 2025 +0800
+
+    fixed port
+
+[33mcommit de5632cec5281ee41e1aaec920f63b9aba898f50[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 11:51:24 2025 +0800
+
+    updated db
+
+[33mcommit 3387cfed12960bd27a2a2c06f5c2abc682b7e1af[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 11:31:12 2025 +0800
+
+    Added Flask application
+
+[33mcommit bae72db4e403589294b0d8e73e3d611923f9ed25[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 11:07:28 2025 +0800
+
+    Track large files using Git LFS
+
+[33mcommit 51d3952d9396233363a42958bb6eb897762e3533[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 10:56:08 2025 +0800
+
+    requirements
+
+[33mcommit f1ef59d65a0a55273abee33096f6fae90d20d462[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 10:34:59 2025 +0800
+
+    add requirements
+
+[33mcommit eec1f0de929a8f13f1c2f91d58c800bb9122f4b0[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 10:24:41 2025 +0800
+
+    added concurrently 3
+
+[33mcommit 962e5f4e56598e9b4b4de3b1927b9beb6fd16ddf[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 10:21:29 2025 +0800
+
+    added concurrently 2
+
+[33mcommit a16f4fe6647a431c0c16bc50de1d8797230d252b[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 10:10:44 2025 +0800
+
+    added concurrently 1
+
+[33mcommit 122082271c8daa54b763e52d455894df8c739ee0[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 10:01:15 2025 +0800
+
+    added concurrently
+
+[33mcommit 18162b6b012edfd4ef2612dc4b667336f3431183[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 01:29:12 2025 +0800
+
+    UPDATED CONCURRENTLY
+
+[33mcommit 040bdddb513cd9fee999a4c9ee224a0d22b3513b[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 01:27:08 2025 +0800
+
+    UPDATED CONCURRENTLY
+
+[33mcommit 7bf0606b1276056a40a1584366bd01c76b0b61f6[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 01:24:10 2025 +0800
+
+    UPDATED CONCURRENTLY
+
+[33mcommit 7895b858bafbfdace1f008356f53b049ffcdff29[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 01:21:41 2025 +0800
+
+    UPDATED CONCURRENTLY
+
+[33mcommit 1dcf8e0c2a4100c58e1f4194347f988b6b9e9b38[m
+Author: Eleazar <21-04052@g.batstate-u.edu.ph>
+Date:   Thu Jan 2 01:12:55 2025 +0800
+
+    first commit

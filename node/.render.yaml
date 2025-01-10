@@ -1,0 +1,15 @@
+services:
+  - type: web
+    name: combined-service
+    env: docker
+    dockerfilePath: Dockerfile
+    buildCommand: ""
+    startCommand: "./render-start.sh"
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: NODE_ENV
+        value: production
+    ports:
+      - 5000  # Node.js
+      - 10000   # Flask
