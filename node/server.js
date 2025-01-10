@@ -148,7 +148,92 @@ app.post('/api/feedback', async (req, res) => {
 });
 
 
+app.get('/order/order-history', async (req, res) => {
+  try {
+    // Fetch all orders and users in a single query by joining users and orders
+    const result = await pool.query(
+      `
+      SELECT 
+        o.order_id, 
+        o.user_id, 
+        o.mop, 
+        o.total_amount, 
+        o.order_type, 
+        o.date, 
+        o.time, 
+        o.delivery, 
+        o.reservation_id, 
+        o.status, 
+        o.customer_name, 
+        o.number_of_people,
+        u.first_name, 
+        u.last_name, 
+        u.email, 
+        u.phone, 
+        u.address
+      FROM orders o
+      JOIN users u ON o.user_id = u.user_id
+      ORDER BY o.date DESC;
+      `
+    );
 
+    const orderIds = result.rows.map(order => order.order_id);
+
+    const itemsResult = await pool.query(
+      `
+      SELECT oq.order_id, oq.menu_id, oq.order_quantity, mi.name as menu_name
+      FROM order_quantities oq
+      JOIN menu_items mi ON oq.menu_id = mi.menu_id
+      WHERE oq.order_id = ANY($1);
+      `,
+      [orderIds]
+    );
+
+    const reservationResult = await pool.query(
+      `
+      SELECT r.reservation_id, r.reservation_date, r.reservation_time
+      FROM reservations r
+      WHERE r.reservation_id = ANY($1);
+      `,
+      [result.rows.map(order => order.reservation_id).filter(Boolean)]
+    );
+
+    const groupedOrders = result.rows.map(order => {
+      const orderItems = itemsResult.rows.filter(item => item.order_id === order.order_id);
+      const reservationDetails = order.reservation_id
+        ? reservationResult.rows.find(r => r.reservation_id === order.reservation_id)
+        : null;
+
+      return {
+        order_id: order.order_id,
+        user_id: order.user_id,
+        date: order.date,
+        time: order.time,
+        total_amount: parseFloat(order.total_amount),
+        mop: order.mop,
+        delivery: order.delivery,
+        orderType: order.order_type,
+        reservation_id: order.reservation_id,
+        status: order.status,
+        customerName: order.customer_name,
+        numberOfPeople: order.number_of_people,
+        firstName: order.first_name,
+        lastName: order.last_name,
+        email: order.email,
+        phone: order.phone,
+        address: order.address,
+        reservation_date: reservationDetails ? reservationDetails.reservation_date : null,
+        reservation_time: reservationDetails ? reservationDetails.reservation_time : null,
+        items: orderItems,
+      };
+    });
+
+    res.json(groupedOrders);
+  } catch (error) {
+    console.error("Error fetching order history:", error.message);
+    res.status(500).json({ error: 'Failed to fetch order history. Please try again later.' });
+  }
+});
 
 
 
