@@ -72,7 +72,6 @@ app.get('/test-db', async (req, res) => {
 });
 
 const port = process.env.PORT;  // Now using the PORT from .env
-
 // Use the PayMongo secret key from .env
 const PAYMONGO_SECRET_KEY = process.env.PAYMONGO_SECRET_KEY;
 
