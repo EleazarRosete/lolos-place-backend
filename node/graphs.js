@@ -124,7 +124,7 @@ router.get('/highest-selling-products', async (req, res) => {
 router.get('/call-sales-forecast', async (req, res) => {
   try {
     // Call the Flask /sales-forecast route using GET method
-    const response = await axios.get('https://lolos-place-backend-flask.onrender.com/sales-forecast'); // Flask server URL
+    const response = await axios.get('https://lolos-place-backend-1.onrender.com/sales-forecast'); // Flask server URL
     // Send the response data from Flask to the client
     res.json(response.data);
     console.log(response.data);
@@ -142,7 +142,7 @@ router.get('/call-sales-forecast', async (req, res) => {
 router.get('/call-feedback-graph', async (req, res) => {
   try {
       // Call the Flask API
-      const response = await axios.get('https://lolos-place-backend-flask.onrender.com/feedback-graph', null, {
+      const response = await axios.get('https://lolos-place-backend-1.onrender.com/feedback-graph', null, {
           responseType: 'arraybuffer', // To handle binary data like SVG
       });
 
@@ -162,7 +162,7 @@ router.get('/call-feedback-graph', async (req, res) => {
 router.get('/call-feedback-stats', async (req, res) => {
   try {
       // Call the Flask API
-      const response = await axios.get('https://lolos-place-backend-flask.onrender.com/feedback-stats');
+      const response = await axios.get('https://lolos-place-backend-1.onrender.com/feedback-stats');
 
       // Forward the JSON data received from Flask
       res.json(response.data);
@@ -181,7 +181,7 @@ router.get('/call-feedback-stats', async (req, res) => {
 router.post('/api/call-analyze-sentiment', async (req, res) => {
   try {
       // Forward the JSON body to the Flask API with correct headers
-      const response = await axios.post('https://lolos-place-backend-flask.onrender.com/api/analyze-sentiment', req.body, {
+      const response = await axios.post('https://lolos-place-backend-1.onrender.com/api/analyze-sentiment', req.body, {
           headers: {
               'Content-Type': 'application/json',
           },
