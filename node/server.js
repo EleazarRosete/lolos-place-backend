@@ -528,7 +528,7 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
 
   const cancelUrl = user_id === 14
     ? 'https://lolos-place-frontend.onrender.com/admin/pos/failed'
-    : 'https://youtube.com/';
+    : 'https://lolos-place-frontend.onrender.com/';
 
 
   try {
