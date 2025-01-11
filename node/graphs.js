@@ -181,7 +181,7 @@ router.get('/call-feedback-stats', async (req, res) => {
 router.post('/api/call-analyze-sentiment', async (req, res) => {
   try {
       // Forward the JSON body to the Flask API with correct headers
-      const response = await axios.post('https://lolos-place-backend-1.onrender.com/api/analyze-sentiment', req.body, {
+      const response = await axios.post(' http://127.0.0.1:5000/api/analyze-sentiment', req.body, {
           headers: {
               'Content-Type': 'application/json',
           },
