@@ -121,21 +121,6 @@ router.get('/highest-selling-products', async (req, res) => {
 
 
 
-router.get('/call-sales-forecast', async (req, res) => {
-  try {
-    // Call the Flask /sales-forecast route using GET method
-    const response = await axios.get('https://lolos-place-backend-1.onrender.com/sales-forecast'); // Flask server URL
-    // Send the response data from Flask to the client
-    res.json(response.data);
-    console.log(response.data);
-  } catch (error) {
-    console.error('Error calling Flask sales-forecast route:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Error calling Flask sales-forecast route' });
-  }
-});
-
-
-
 
 
 

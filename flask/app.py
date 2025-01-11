@@ -86,8 +86,7 @@ def test_db():
 
 
 
-
-@app.route('/sales-forecast', methods=['GET'])
+@app.route('/sales-forecast', methods=['POST'])
 def sales_forecast():
     try:
         # Connect to the database
@@ -152,7 +151,13 @@ def sales_forecast():
         }
 
         # Prepare historical sales data grouped by year and month
-        sales_per_month = df[['year', 'month', 'total_gross_sales']].to_dict(orient='records')
+        sales_per_month = []
+        for _, row in df.iterrows():
+            sales_per_month.append({
+                'year': int(row['year']),
+                'month': int(row['month']),
+                'total_gross_sales': row['total_gross_sales']
+            })
 
         # Prepare the response data
         response_data = {
@@ -164,7 +169,8 @@ def sales_forecast():
 
     except Exception as e:
         return jsonify({"error": "Error in forecasting sales: " + str(e)}), 500
-    
+
+
 
 
 
