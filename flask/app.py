@@ -104,71 +104,37 @@ def sales_forecast():
                 """)
                 data = cursor.fetchall()
 
-        # If no data is found
         if not data:
             return jsonify({"error": "No sales data available for forecasting"}), 404
 
-        # Prepare data for forecasting
+        # Convert query result to DataFrame
         df = pd.DataFrame(data, columns=['year', 'month', 'total_gross_sales'])
 
-        # Combine year and month to create a date column (first day of each month)
-        df['date'] = pd.to_datetime(df[['year', 'month']].assign(day=1))
-
-        # Ensure the data has valid values
-        df = df.dropna(subset=['date', 'total_gross_sales'])
-
-        # Check if the cleaned data is empty
-        if df.empty:
-            return jsonify({"error": "Data is empty after cleaning"}), 404
-
-        # Convert date to ordinal for modeling
-        df['date_ordinal'] = df['date'].apply(lambda x: x.toordinal())
-
-        # Prepare independent (X) and dependent (y) variables
-        X = df['date_ordinal'].values.reshape(-1, 1)
-        y = df['total_gross_sales'].values
-
-        # Ensure there is enough data for linear regression
-        if len(X) < 2:  # Need at least two data points to fit the model
-            return jsonify({"error": "Not enough data to fit the model"}), 400
-
-        # Create a Linear Regression model and fit the data
-        model = LinearRegression()
-        model.fit(X, y)
-
-        # Calculate predicted sales for the current month
-        current_month = datetime.now().month
-        current_year = datetime.now().year
-        current_month_date = datetime(current_year, current_month, 1)
-        current_month_ordinal = np.array([current_month_date.toordinal()]).reshape(-1, 1)
-        predicted_sales_this_month = model.predict(current_month_ordinal)
-
-        # Prepare the result for predicted sales for the current month
-        predicted_sales_current_month = {
-            'year': current_year,
-            'month': current_month,
-            'predicted_sales': predicted_sales_this_month.tolist()[0]
+        # Convert to {(year, month): sales} format
+        sales_data = {
+            (int(row['year']), int(row['month'])): row['total_gross_sales']
+            for _, row in df.iterrows()
         }
 
-        # Prepare historical sales data grouped by year and month
-        sales_per_month = []
-        for _, row in df.iterrows():
-            sales_per_month.append({
-                'year': int(row['year']),
-                'month': int(row['month']),
-                'total_gross_sales': row['total_gross_sales']
-            })
+        # Call the forecast function
+        monthly_forecast = forecast_next_year_by_month(sales_data)
 
-        # Prepare the response data
-        response_data = {
-            'sales_per_month': sales_per_month,
-            'predicted_sales_current_month': predicted_sales_current_month
-        }
+        # Prepare forecast response
+        forecast_response = [
+            {
+                'year': year,
+                'month': month,
+                'predicted_sales': round(prediction, 2)
+            }
+            for (year, month), prediction in monthly_forecast.items()
+        ]
 
-        return jsonify(response_data)
+        return jsonify({
+            'monthly_forecast': forecast_response
+        })
 
     except Exception as e:
-        return jsonify({"error": "Error in forecasting sales: " + str(e)}), 500
+        return jsonify({"error": str(e)}), 500
 
 
 
