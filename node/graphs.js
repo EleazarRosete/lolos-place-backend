@@ -7,6 +7,55 @@ const pool = require('./db');
 
 
 
+router.get('/sales-past-data', async (req, res) => {
+  try {
+    // Query the database to sum total gross sales by year and month
+    const query = `
+      SELECT 
+        EXTRACT(YEAR FROM CAST(date AS DATE)) AS year,
+        EXTRACT(MONTH FROM CAST(date AS DATE)) AS month,
+        SUM(gross_sales) AS total_gross_sales
+      FROM sales_data
+      WHERE EXTRACT(YEAR FROM CAST(date AS DATE)) >= 2019
+      GROUP BY year, month
+      ORDER BY year, month;
+    `;
+
+    const { rows } = await pool.query(query);
+
+    // If no data is found
+    if (rows.length === 0) {
+      return res.status(404).json({ error: 'No sales data available' });
+    }
+
+    // Prepare the sales data grouped by year and month
+    const salesPerMonth = rows.reduce((acc, row) => {
+      const year = parseInt(row.year, 10);
+      const month = parseInt(row.month, 10);
+      const totalGrossSales = parseFloat(row.total_gross_sales);
+
+      // If the year doesn't exist in the accumulator, create it
+      if (!acc[year]) {
+        acc[year] = {};
+      }
+
+      // Add the month and sales data for the year
+      acc[year][month] = totalGrossSales;
+
+      return acc;
+    }, {});
+
+    // Send the response
+    res.json({ sales_per_month: salesPerMonth });
+  } catch (error) {
+    res.status(500).json({ error: 'Error fetching sales data: ' + error.message });
+  }
+});
+
+
+
+
+
 router.get('/peak-hours-data', async (req, res) => {
   try {
     // Get the selected day from query parameters (e.g., ?day=Monday)
