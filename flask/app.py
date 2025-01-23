@@ -86,7 +86,7 @@ def test_db():
 
 
 
-@app.route('/sales-forecast', methods=['POST'])
+@app.route('/sales-forecast', methods=['GET'])
 def sales_forecast():
     try:
         # Connect to the database
@@ -136,41 +136,28 @@ def sales_forecast():
         model = LinearRegression()
         model.fit(X, y)
 
-        # Calculate predicted sales for the current month
-        current_month = datetime.now().month
+        # Predict sales for each month of the current year
         current_year = datetime.now().year
-        current_month_date = datetime(current_year, current_month, 1)
-        current_month_ordinal = np.array([current_month_date.toordinal()]).reshape(-1, 1)
-        predicted_sales_this_month = model.predict(current_month_ordinal)
-
-        # Prepare the result for predicted sales for the current month
-        predicted_sales_current_month = {
-            'year': current_year,
-            'month': current_month,
-            'predicted_sales': predicted_sales_this_month.tolist()[0]
-        }
-
-        # Prepare historical sales data grouped by year and month
-        sales_per_month = []
-        for _, row in df.iterrows():
-            sales_per_month.append({
-                'year': int(row['year']),
-                'month': int(row['month']),
-                'total_gross_sales': row['total_gross_sales']
+        monthly_forecasts = []
+        for month in range(1, 13):
+            month_date = datetime(current_year, month, 1)
+            month_ordinal = np.array([month_date.toordinal()]).reshape(-1, 1)
+            predicted_sales = model.predict(month_ordinal)[0]
+            monthly_forecasts.append({
+                'year': current_year,
+                'month': month,
+                'predicted_sales': predicted_sales
             })
 
         # Prepare the response data
         response_data = {
-            'sales_per_month': sales_per_month,
-            'predicted_sales_current_month': predicted_sales_current_month
+            'predicted_sales_current_year': monthly_forecasts
         }
 
         return jsonify(response_data)
 
     except Exception as e:
         return jsonify({"error": "Error in forecasting sales: " + str(e)}), 500
-
-
 
 
 

@@ -6,54 +6,57 @@ const router = express.Router();
 const pool = require('./db'); 
 
 
+
 router.get('/peak-hours-data', async (req, res) => {
   try {
-    // Execute the SQL query
+    // Get the selected day from query parameters (e.g., ?day=Monday)
+    const { day } = req.query;
+
+    if (!day) {
+      return res.status(400).json({ error: 'Day parameter is required.' });
+    }
+
+    // Ensure the selected day is valid
+    const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    if (!validDays.includes(day)) {
+      return res.status(400).json({ error: 'Invalid day parameter. Please provide a valid day.' });
+    }
+
+    // Execute the SQL query with the selected day filter
     const query = `
       SELECT TRIM(TO_CHAR(date, 'Day')) AS day_of_week,
              EXTRACT(HOUR FROM time AT TIME ZONE 'UTC') AS hour_of_day,
              COUNT(*) AS order_count
       FROM orders
-      WHERE EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
+      WHERE TRIM(TO_CHAR(date, 'Day')) = $1 
+        AND EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
       GROUP BY day_of_week, hour_of_day
-      ORDER BY day_of_week, hour_of_day;
+      ORDER BY hour_of_day;
     `;
-    const { rows } = await pool.query(query);
+    const { rows } = await pool.query(query, [day]);
 
-    // Define days and peak hours
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    // Define hours from 10 AM to 9 PM (inclusive)
     const hours = Array.from({ length: 11 }, (_, i) => i + 10); // Peak hours: 10 AM to 9 PM
 
-    // Initialize the data structure
+    // Initialize the order data structure with 0 orders for each hour
     const orderData = {};
-    days.forEach(day => {
-      orderData[day] = {};
-      hours.forEach(hour => {
-        orderData[day][hour] = 0;
-      });
+    hours.forEach(hour => {
+      orderData[hour] = 0; // Initialize all hours to 0 orders
     });
 
-    // Populate orderData with query results
+    // Populate orderData with query results, updating only the hours that have orders
     rows.forEach(row => {
-      const { day_of_week, hour_of_day, order_count } = row;
-      if (orderData[day_of_week]) {
-        orderData[day_of_week][parseInt(hour_of_day)] = order_count;
-      }
+      const { hour_of_day, order_count } = row;
+      orderData[parseInt(hour_of_day)] = parseInt(order_count); // Ensure the order count is an integer
     });
 
-    // Find the peak hour for each day
-    const highestOrders = {};
-    days.forEach(day => {
-      const dayData = orderData[day];
-      const highestHour = Object.keys(dayData).reduce((a, b) => dayData[a] > dayData[b] ? a : b);
-      highestOrders[day] = {
-        hour: highestHour,
-        order_count: dayData[highestHour],
-      };
-    });
+    // Ensure hour 21 (9 PM) is included if there are no orders
+    if (orderData[21] === undefined) {
+      orderData[21] = 0; // Set to 0 if no orders are found for 9 PM
+    }
 
-    // Return the response
-    res.json({ highest_orders: highestOrders });
+    // Return the response with all hours, including those with 0 orders
+    res.json({ day: day, order_data: orderData });
   } catch (e) {
     console.error('Error:', e);
     res.status(500).json({ error: `Error retrieving peak hours data: ${e.message}` });
@@ -65,57 +68,41 @@ router.get('/peak-hours-data', async (req, res) => {
 
 router.get('/highest-selling-products', async (req, res) => {
   try {
-    const { year, month } = req.query;
+    const { startDate, endDate } = req.query;
 
-    if (!year || !month) {
-      return res.status(400).json({ error: 'Year and month are required' });
+    if (!startDate || !endDate) {
+      return res.status(400).json({ error: 'Start date and end date are required' });
     }
 
-    // SQL query to fetch the highest selling products
+    // SQL query to fetch the highest selling products within the date range
     const query = `
-      WITH monthly_sales AS (
-        SELECT 
-          product_name,
-          DATE_TRUNC('month', date::DATE) AS sale_month,
-          SUM(quantity_sold) AS total_quantity_sold
-        FROM sales_data
-        WHERE EXTRACT(YEAR FROM date::DATE) = $1
-        AND EXTRACT(MONTH FROM date::DATE) = $2
-        GROUP BY product_name, DATE_TRUNC('month', date::DATE)
-        ORDER BY sale_month, total_quantity_sold DESC
-      )
       SELECT 
-        sale_month,
         product_name,
-        total_quantity_sold
-      FROM monthly_sales;
+        SUM(quantity_sold) AS total_quantity_sold
+      FROM sales_data
+      WHERE date::DATE BETWEEN $1 AND $2
+      GROUP BY product_name
+      ORDER BY total_quantity_sold DESC;
     `;
 
-    // Execute the query with the provided year and month
-    const result = await pool.query(query, [year, month]);
+    // Execute the query with the provided start and end dates
+    const result = await pool.query(query, [startDate, endDate]);
 
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'No sales data available for the given month and year' });
+      return res.status(404).json({ error: 'No sales data available for the given date range' });
     }
 
     // Prepare data for visualization
-    const data = {};
-    result.rows.forEach(row => {
-      const saleMonth = row.sale_month.toISOString().slice(0, 7); // Format as Year-Month
-      if (!data[saleMonth]) {
-        data[saleMonth] = [];
-      }
-      data[saleMonth].push({
-        product_name: row.product_name,
-        quantity_sold: row.total_quantity_sold,
-      });
-    });
+    const data = result.rows.map(row => ({
+      product_name: row.product_name,
+      quantity_sold: row.total_quantity_sold,
+    }));
 
     return res.json(data);
 
   } catch (err) {
     console.error('Error:', err);
-    return res.status(500).json({ error: 'Error in fetching product demand per month: ' + err.message });
+    return res.status(500).json({ error: 'Error in fetching product demand: ' + err.message });
   }
 });
 
