@@ -1,6 +1,6 @@
 const pool = require('../db');
 const queries = require('./queries');
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 
 
 // Function to add a new sale
