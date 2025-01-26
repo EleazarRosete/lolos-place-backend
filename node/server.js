@@ -18,6 +18,7 @@ const payment = require('./payment/routes');
 const sales = require('./sales/routes');
 const purchases = require('./purchases/routes');
 const graphs = require('./graphs');
+const user = require('./user/routes');
 
 
 const app = express();
@@ -112,6 +113,7 @@ app.use('/order', order);
 app.use('/payment', payment);
 app.use('/sales', sales);
 app.use('/purchases', purchases);
+app.use('/user', user);
 app.use('/graphs', graphs);
 
 
