@@ -7,7 +7,7 @@ const getCategories = 'SELECT category FROM menu_items';
 const getStock = 'SELECT stocks FROM menu_items WHERE menu_id = $1';
 const updateStock = `UPDATE menu_items SET stocks = stocks - $1 WHERE menu_id = $2`;
 
-const addOrder = `INSERT INTO orders (user_id, mop, total_amount, date, time, delivery, reservation_id, order_type, customer_name, number_of_people ) VALUES (14, $1, $2, CURRENT_DATE, CURRENT_TIME, $3, $4, $5,$6,$7) RETURNING order_id;`;
+const addOrder = `INSERT INTO orders (user_id, mop, total_amount, date, time, delivery, reservation_id, order_type, customer_name, number_of_people, ispaid ) VALUES (14, $1, $2, CURRENT_DATE, CURRENT_TIME, $3, $4, $5,$6,$7,$8) RETURNING order_id;`;
 const getOrder = 'SELECT * FROM orders;';
 
 const addReservation = `INSERT INTO reservations (user_id, guest_number, reservation_date, reservation_time, advance_order) VALUES (13, $1, $2, $3, $4) RETURNING reservation_id;`;

@@ -1,6 +1,7 @@
 const pool = require('../db');
 const queries = require('./queries');
 
+
 const addProduct = async (req, res) => {
     const { name, description, category, price, items, img, stocks } = req.body;
 
@@ -15,7 +16,7 @@ const addProduct = async (req, res) => {
             product_price,
             items,
             img,
-            product_stock
+            product_stock,
         ]);
 
         res.status(201).json({ message: 'Product item added successfully', productId: addResult.rows[0].menu_id });
