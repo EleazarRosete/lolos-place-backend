@@ -420,8 +420,42 @@ const deleteTempData = async (req, res) => {
     }
 };
 
+const updateIsPaid = async (req, res) => {
+    const { order_id } = req.params;
+    try {
+      console.log(`Updating payment status for order ID: ${order_id}`);
+      const response = await pool.query(queries.updateIsPaid, [order_id]);
+  
+      if (response.rowCount === 0) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+  
+      res.status(200).json({ message: "Order payment status updated successfully" });
+    } catch (err) {
+      console.error(`Error updating order payment status for order ID ${order_id}: ${err.message}`);
+      res.status(500).json({ message: `Error updating order payment status: ${err.message}` });
+    }
+  };
+  
+
+  const deleteOrder = async (req, res) => {
+    try {
+      const { order_id } = req.params;
+      const result = await queries.deleteOrder(order_id);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+  
+      res.status(200).json({ message: "Order deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ message: "An error occurred", error: error.message });
+    }
+  };
 
 
+  
+  
 module.exports = {
     addProduct,
     getProduct,
@@ -432,6 +466,7 @@ module.exports = {
     getCategories,
     addOrder,
     getOrder,
+    deleteOrder,
     addReservation,
     getReservation,
     addDelivery,
@@ -444,4 +479,5 @@ module.exports = {
     addTempData,
     getTempData,
     deleteTempData,
+    updateIsPaid,
 };

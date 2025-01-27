@@ -6,6 +6,8 @@ const router = Router();
 
 router.post('/add-order', controller.addOrder);
 router.get('/get-order', controller.getOrder);
+router.delete('/delete-order/:order_id', controller.deleteOrder);
+router.put('/update-is-paid/:order_id', controller.updateIsPaid);
 router.put('/order-served/:order_id', controller.orderServed);
 
 router.post('/add-temp-data', controller.addTempData);

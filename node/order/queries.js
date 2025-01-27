@@ -48,7 +48,12 @@ WHERE order_id = $1;
 
 const getTempData = `SELECT * FROM temp_data;`;
 
+const updateIsPaid = `UPDATE orders
+SET ispaid = true
+WHERE order_id = $1;`;
 
+const deleteOrder = `DELETE FROM orders
+WHERE order_id = $1;`;
 
 module.exports = {
     addProduct,
@@ -56,6 +61,7 @@ module.exports = {
     getProductById,
     updateProduct,
     deleteProduct,
+    deleteOrder,
     updateStock,
     getCategories,
     getStock,
@@ -72,4 +78,5 @@ module.exports = {
     getUsers,
     orderServed,
     getTempData,
+    updateIsPaid,
 };
