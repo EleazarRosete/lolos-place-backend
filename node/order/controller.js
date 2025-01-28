@@ -164,7 +164,7 @@ const getCategories = async (req, res) => {
 
 
 const addOrder = async (req, res) => {
-    const { mop, total_amount, delivery, reservation_id, order_type, items, customer_name, number_of_people, ispaid } = req.body;
+    const { mop, total_amount, delivery, reservation_id, order_type, items, customer_name, number_of_people, ispaid, table_id } = req.body;
     const sum = parseInt(total_amount, 10); // Parse total_amount to integer
 
     try {
@@ -178,6 +178,7 @@ const addOrder = async (req, res) => {
             customer_name,
             number_of_people,
             ispaid,
+            table_id,
         ]);
 
         // Insert items after order is successfully created

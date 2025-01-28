@@ -244,7 +244,15 @@ app.get('/order/order-history', async (req, res) => {
 
 
 
-
+app.get('/table/get-table', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM tables;');
+    res.status(200).json(result.rows);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'An error occurred while fetching data.' });
+  }
+});
 
 
 
