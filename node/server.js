@@ -659,7 +659,7 @@ const generateRandomId = (length) => {
 };
 
 app.post('/api/create-gcash-checkout-session', async (req, res) => {
-  const { user_id, lineItems } = req.body;
+  const { user_id, lineItems , orderId} = req.body;
 
   const formattedLineItems = lineItems.map((product) => {
     return {
@@ -674,11 +674,11 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
 
   // Define URLs based on user_id
   const successUrl = user_id === 14
-    ? 'https://lolos-place-frontend.onrender.com/admin/pos/successful'
+    ? `https://lolos-place-frontend.onrender.com/admin/pos/successful?${orderId}`
     : `https://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
 
   const cancelUrl = user_id === 14
-    ? 'https://lolos-place-frontend.onrender.com/admin/pos/failed'
+    ? `https://lolos-place-frontend.onrender.com/admin/pos/failed?${orderId}`
     : 'https://lolos-place-frontend.onrender.com/';
 
 
