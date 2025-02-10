@@ -7,6 +7,9 @@ const getCategories = 'SELECT category FROM menu_items';
 const getStock = 'SELECT stocks FROM menu_items WHERE menu_id = $1';
 const updateStock = `UPDATE menu_items SET stocks = stocks - $1 WHERE menu_id = $2`;
 const getLowStocks = 'SELECT * FROM menu_items WHERE stocks < 21';
+const addProductStockByOne = `UPDATE menu_items SET stocks = stocks + 1 WHERE menu_id = $1`;
+const minusProductStockByOne = `UPDATE menu_items SET stocks = stocks - 1 WHERE menu_id = $1`;
+const removeOrder = `UPDATE menu_items SET stocks = stocks + $1 WHERE menu_id = $2`;
 
 
 module.exports = {
@@ -19,4 +22,7 @@ module.exports = {
     getStock,
     updateStock,
     getLowStocks,
+    addProductStockByOne,
+    minusProductStockByOne,
+    removeOrder,
 };

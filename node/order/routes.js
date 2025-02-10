@@ -10,6 +10,7 @@ router.delete('/delete-order/:order_id', controller.deleteOrder);
 router.put('/update-is-paid/:order_id', controller.updateIsPaid);
 router.put('/order-served/:order_id', controller.orderServed);
 
+
 router.post('/add-temp-data', controller.addTempData);
 router.get('/get-temp-data', controller.getTempData);
 router.delete('/delete-temp-data/:purchases_id', controller.deleteTempData);

@@ -177,6 +177,80 @@ const getLowStocks = async (req, res) => {
     }
 };
 
+
+
+
+
+
+
+const addProductStockByOne = async (req, res) => {
+    const productId = parseInt(req.params.menu_id);
+
+    try {
+
+        // Increase the product stock
+        await pool.query(queries.addProductStockByOne, [productId]);
+
+        res.status(200).json({ message: 'Product stock increased successfully.' });
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        res.status(500).json({ error: 'Error updating product stock' });
+    }
+};
+
+
+
+
+const minusProductStockByOne = async (req, res) => {
+    const productId = parseInt(req.params.menu_id); 
+
+    try {
+
+        await pool.query(queries.minusProductStockByOne, [ productId]); // Ensure query expects (quantity, productId)
+
+        res.status(200).json({ message: 'Product stock updated successfully.' });
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        res.status(500).json({ error: 'Error updating product stock' });
+    }
+};
+
+
+
+const removeOrder = async (req, res) => {
+    const productId = parseInt(req.params.menu_id); // Get the product ID from the URL parameters
+    const { quantity } = req.body; // Get the stock from the request body
+
+    if (isNaN(quantity) || quantity <= 0) {
+        return res.status(400).json({ error: 'Invalid quantity provided.' });
+    }
+
+    try {
+        // Check the current product stock
+        const currentProduct = await pool.query(queries.getStock, [productId]);
+
+        if (currentProduct.rows.length === 0) {
+            return res.status(404).json({ error: 'Product not found' });
+        }
+
+        const currentStock = currentProduct.rows[0].stocks;
+
+        // Ensure we don't reduce below zero
+        if (currentStock < quantity) {
+            return res.status(400).json({ error: 'Insufficient stock' });
+        }
+
+        // Update the product stock in the database
+        await pool.query(queries.removeOrder, [quantity, productId]);
+
+        res.status(200).json({ message: 'Product stock updated successfully.' });
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        res.status(500).json({ error: 'Error updating product stock' });
+    }
+};
+
+
 module.exports = {
     addProduct,
     getProduct,
@@ -186,4 +260,7 @@ module.exports = {
     updateProductStock,
     getCategories,
     getLowStocks,
+    addProductStockByOne,
+    minusProductStockByOne,
+    removeOrder,
 };

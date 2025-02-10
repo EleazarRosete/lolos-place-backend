@@ -19,6 +19,8 @@ const sales = require('./sales/routes');
 const purchases = require('./purchases/routes');
 const graphs = require('./graphs');
 const user = require('./user/routes');
+const order_temp_data = require('./order_temp_data/routes');
+
 
 
 const app = express();
@@ -115,6 +117,7 @@ app.use('/sales', sales);
 app.use('/purchases', purchases);
 app.use('/user', user);
 app.use('/graphs', graphs);
+app.use('/order-temp-data', order_temp_data);
 
 
 

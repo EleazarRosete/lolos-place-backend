@@ -13,5 +13,9 @@ router.get('/get-categories',controller.getCategories);
 router.get('/get-low-stocks',controller.getLowStocks);
 
 
+router.patch('/add-product-stock-by-one/:menu_id', controller.addProductStockByOne);
+router.patch('/minus-product-stock-by-one/:menu_id', controller.minusProductStockByOne);
+router.patch('/remove-order/:menu_id', controller.removeOrder);
+
 
 module.exports = router;
