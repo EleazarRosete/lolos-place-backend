@@ -64,7 +64,7 @@ app.use('/flask', async (req, res) => {
 app.get('/test-db', async (req, res) => {
   try {
     const result = await pool.query('SELECT 1');
-    res.json({ message: 'Database connected node', result: result.rows });
+    res.json({ message: 'Database connected nodeeee', result: result.rows });
   } catch (error) {
     console.error(error);
     res.status(500).send('Database connection failed');
