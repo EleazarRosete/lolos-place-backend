@@ -6,59 +6,61 @@ const router = express.Router();
 const pool = require('./db'); 
 
 
+
+
+
+
 app.get('/peak-hours-data', async (req, res) => {
   try {
-    // Execute the SQL query
+    const { start_date, end_date, day_of_week } = req.query;
+
+    if (!start_date || !end_date) {
+      return res.status(400).json({ error: "start_date and end_date are required" });
+    }
+
+    let dayFilter = '';
+    const values = [start_date, end_date];
+
+    if (day_of_week) {
+      dayFilter = `AND TRIM(TO_CHAR(o.date, 'Day')) = $3`;
+      values.push(day_of_week);
+    }
+
     const query = `
-      SELECT TRIM(TO_CHAR(date, 'Day')) AS day_of_week,
-             EXTRACT(HOUR FROM time AT TIME ZONE 'UTC') AS hour_of_day,
-             COUNT(*) AS order_count
-      FROM orders
-      WHERE EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
-      GROUP BY day_of_week, hour_of_day
-      ORDER BY day_of_week, hour_of_day;
+    WITH ranked_orders AS (
+        SELECT 
+            TRIM(TO_CHAR(o.date, 'Day')) AS day_of_week,
+            EXTRACT(HOUR FROM o.time AT TIME ZONE 'UTC') AS hour_of_day,
+            mi.main_category,
+            COUNT(*) AS order_count,
+            RANK() OVER (PARTITION BY TRIM(TO_CHAR(o.date, 'Day')), EXTRACT(HOUR FROM o.time) ORDER BY COUNT(*) DESC) AS rnk
+        FROM orders o
+        JOIN order_details od ON o.order_id = od.order_id
+        JOIN menu_items mi ON od.menu_id = mi.menu_id
+        WHERE o.date BETWEEN $1 AND $2
+        AND EXTRACT(HOUR FROM o.time) BETWEEN 10 AND 21
+        ${dayFilter}
+        GROUP BY day_of_week, hour_of_day, mi.main_category
+    )
+    SELECT json_agg(json_build_object(
+        'day', day_of_week,
+        'hour_of_day', hour_of_day,
+        'category', main_category,
+        'order_count', order_count
+    )) AS result
+    FROM ranked_orders
+    WHERE rnk = 1;
     `;
-    const { rows } = await pool.query(query);
 
-    // Define days and peak hours
-    const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    const hours = Array.from({ length: 11 }, (_, i) => i + 10); // Peak hours: 10 AM to 9 PM
+    const { rows } = await pool.query(query, values);
 
-    // Initialize the data structure
-    const orderData = {};
-    days.forEach(day => {
-      orderData[day] = {};
-      hours.forEach(hour => {
-        orderData[day][hour] = 0;
-      });
-    });
-
-    // Populate orderData with query results
-    rows.forEach(row => {
-      const { day_of_week, hour_of_day, order_count } = row;
-      if (orderData[day_of_week]) {
-        orderData[day_of_week][parseInt(hour_of_day)] = order_count;
-      }
-    });
-
-    // Find the peak hour for each day
-    const highestOrders = {};
-    days.forEach(day => {
-      const dayData = orderData[day];
-      const highestHour = Object.keys(dayData).reduce((a, b) => dayData[a] > dayData[b] ? a : b);
-      highestOrders[day] = {
-        hour: highestHour,
-        order_count: dayData[highestHour],
-      };
-    });
-
-    // Return the response
-    res.json({ highest_orders: highestOrders });
+    res.json(rows[0].result || []); 
   } catch (e) {
     console.error('Error:', e);
     res.status(500).json({ error: `Error retrieving peak hours data: ${e.message}` });
   }
 });
+
 
 
 
