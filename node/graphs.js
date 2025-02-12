@@ -6,152 +6,115 @@ const router = express.Router();
 const pool = require('./db'); 
 
 
+router.get('/test', (req, res) => {
+    res.send('tempdata.js route is working!');
+  });
 
-router.get('/sales-past-data', async (req, res) => {
-  try {
-    // Query the database to sum total gross sales by year and month
-    const query = `
-      SELECT 
-        EXTRACT(YEAR FROM CAST(date AS DATE)) AS year,
-        EXTRACT(MONTH FROM CAST(date AS DATE)) AS month,
-        SUM(gross_sales) AS total_gross_sales
-      FROM sales_data
-      WHERE EXTRACT(YEAR FROM CAST(date AS DATE)) >= 2019
-      GROUP BY year, month
-      ORDER BY year, month;
-    `;
+  router.get("/peak-hours-data", async (req, res) => {
+    try {
+        const { start_date, end_date, selected_day } = req.query;
 
-    const { rows } = await pool.query(query);
+        // Map day names to PostgreSQL's DOW numbering (Monday = 1, Sunday = 7)
+        const daysOfWeek = {
+            "Monday": 1,
+            "Tuesday": 2,
+            "Wednesday": 3,
+            "Thursday": 4,
+            "Friday": 5,
+            "Saturday": 6,
+            "Sunday": 7
+        };
 
-    // If no data is found
-    if (rows.length === 0) {
-      return res.status(404).json({ error: 'No sales data available' });
+        const dayNumber = daysOfWeek[selected_day];
+
+        if (!dayNumber) {
+            return res.status(400).json({ error: "Invalid selected_day. Use Monday-Sunday." });
+        }
+
+        const query = `
+            WITH hours AS (
+                SELECT generate_series(10, 21) AS hour -- Generates numbers from 10 AM to 9 PM
+            ),
+            hourly_sales AS (
+                SELECT 
+                    EXTRACT(HOUR FROM o.time::TIME) AS hour,
+                    mi.main_category,
+                    SUM(oq.order_quantity) AS total_order_quantity
+                FROM orders o
+                JOIN order_quantities oq ON o.order_id = oq.order_id
+                JOIN menu_items mi ON oq.menu_id = mi.menu_id
+                WHERE o.date BETWEEN $1 AND $2
+                AND EXTRACT(DOW FROM o.date) = $3 -- Use numeric day filtering (Monday = 1, Sunday = 7)
+                GROUP BY hour, mi.main_category
+            ),
+            ranked_sales AS (
+                SELECT 
+                    h.hour,
+                    hs.main_category,
+                    COALESCE(hs.total_order_quantity, 0) AS total_order_quantity,
+                    RANK() OVER (PARTITION BY h.hour ORDER BY hs.total_order_quantity DESC) AS rnk
+                FROM hours h
+                LEFT JOIN hourly_sales hs ON h.hour = hs.hour
+            )
+            SELECT hour, main_category, total_order_quantity
+            FROM ranked_sales
+            WHERE rnk = 1
+            ORDER BY hour;
+        `;
+
+        const result = await pool.query(query, [start_date, end_date, dayNumber]);
+
+        // Format output
+        const response = result.rows.map(row => ({
+            hour: row.hour,
+            main_category: row.main_category || "",
+            total_order_quantity: row.total_order_quantity || 0
+        }));
+
+        res.json(response);
+    } catch (error) {
+        console.error("Error fetching peak hours data:", error);
+        res.status(500).json({ error: "Internal server error" });
     }
+});
 
-    // Prepare the sales data grouped by year and month
-    const salesPerMonth = rows.reduce((acc, row) => {
-      const year = parseInt(row.year, 10);
-      const month = parseInt(row.month, 10);
-      const totalGrossSales = parseFloat(row.total_gross_sales);
 
-      // If the year doesn't exist in the accumulator, create it
-      if (!acc[year]) {
-        acc[year] = {};
+router.get('/sales-summary', async (req, res) => {
+  try {
+      const { start_date, end_date } = req.query;
+
+      if (!start_date || !end_date) {
+          return res.status(400).json({ error: 'Start and end dates are required' });
       }
 
-      // Add the month and sales data for the year
-      acc[year][month] = totalGrossSales;
+      const query = `
+          SELECT product_name, category, SUM(quantity_sold) AS total_quantity_sold
+          FROM sales_data
+          WHERE date BETWEEN $1 AND $2
+          GROUP BY product_name, category
+          ORDER BY total_quantity_sold DESC;
+      `;
 
-      return acc;
-    }, {});
-
-    // Send the response
-    res.json({ sales_per_month: salesPerMonth });
-  } catch (error) {
-    res.status(500).json({ error: 'Error fetching sales data: ' + error.message });
-  }
-});
-
-
-
-
-
-router.get('/peak-hours-data', async (req, res) => {
-  try {
-    // Get the selected day from query parameters (e.g., ?day=Monday)
-    const { day } = req.query;
-
-    if (!day) {
-      return res.status(400).json({ error: 'Day parameter is required.' });
-    }
-
-    // Ensure the selected day is valid
-    const validDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-    if (!validDays.includes(day)) {
-      return res.status(400).json({ error: 'Invalid day parameter. Please provide a valid day.' });
-    }
-
-    // Execute the SQL query with the selected day filter
-    const query = `
-      SELECT TRIM(TO_CHAR(date, 'Day')) AS day_of_week,
-             EXTRACT(HOUR FROM time AT TIME ZONE 'UTC') AS hour_of_day,
-             COUNT(*) AS order_count
-      FROM orders
-      WHERE TRIM(TO_CHAR(date, 'Day')) = $1 
-        AND EXTRACT(HOUR FROM time) BETWEEN 10 AND 21
-      GROUP BY day_of_week, hour_of_day
-      ORDER BY hour_of_day;
-    `;
-    const { rows } = await pool.query(query, [day]);
-
-    // Define hours from 10 AM to 9 PM (inclusive)
-    const hours = Array.from({ length: 11 }, (_, i) => i + 10); // Peak hours: 10 AM to 9 PM
-
-    // Initialize the order data structure with 0 orders for each hour
-    const orderData = {};
-    hours.forEach(hour => {
-      orderData[hour] = 0; // Initialize all hours to 0 orders
-    });
-
-    // Populate orderData with query results, updating only the hours that have orders
-    rows.forEach(row => {
-      const { hour_of_day, order_count } = row;
-      orderData[parseInt(hour_of_day)] = parseInt(order_count); // Ensure the order count is an integer
-    });
-
-    // Ensure hour 21 (9 PM) is included if there are no orders
-    if (orderData[21] === undefined) {
-      orderData[21] = 0; // Set to 0 if no orders are found for 9 PM
-    }
-
-    // Return the response with all hours, including those with 0 orders
-    res.json({ day: day, order_data: orderData });
-  } catch (e) {
-    console.error('Error:', e);
-    res.status(500).json({ error: `Error retrieving peak hours data: ${e.message}` });
-  }
-});
-
-
-
-
-router.get('/highest-selling-products', async (req, res) => {
-  try {
-    const { startDate, endDate } = req.query;
-
-    if (!startDate || !endDate) {
-      return res.status(400).json({ error: 'Start date and end date are required' });
-    }
-
-    // SQL query to fetch the highest selling products within the date range
-    const query = `
-      SELECT 
-        product_name,
-        SUM(quantity_sold) AS total_quantity_sold
-      FROM sales_data
-      WHERE date::DATE BETWEEN $1 AND $2
-      GROUP BY product_name
-      ORDER BY total_quantity_sold DESC;
-    `;
-
-    // Execute the query with the provided start and end dates
-    const result = await pool.query(query, [startDate, endDate]);
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'No sales data available for the given date range' });
-    }
-
-    // Prepare data for visualization
-    const data = result.rows.map(row => ({
-      product_name: row.product_name,
-      quantity_sold: row.total_quantity_sold,
-    }));
-
-    return res.json(data);
-
+      const { rows } = await pool.query(query, [start_date, end_date]);
+      res.json(rows);
   } catch (err) {
-    console.error('Error:', err);
-    return res.status(500).json({ error: 'Error in fetching product demand: ' + err.message });
+      console.error(err);
+      res.status(500).json({ error: 'Internal Server Error' });
+  }
+});
+
+
+
+app.get('/call-sales-forecast', async (req, res) => {
+  try {
+    // Call the Flask /sales-forecast route using GET method
+    const response = await axios.get('https://lolos-place-backend.onrender.com/sales-forecast'); // Flask server URL
+    // Send the response data from Flask to the client
+    res.json(response.data);
+    console.log(response.data);
+  } catch (error) {
+    console.error('Error calling Flask sales-forecast route:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Error calling Flask sales-forecast route' });
   }
 });
 
@@ -160,10 +123,10 @@ router.get('/highest-selling-products', async (req, res) => {
 
 
 
-router.get('/call-feedback-graph', async (req, res) => {
+app.get('/call-feedback-graph', async (req, res) => {
   try {
       // Call the Flask API
-      const response = await axios.get('https://lolos-place-backend-1.onrender.com/feedback-graph', null, {
+      const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-graph', null, {
           responseType: 'arraybuffer', // To handle binary data like SVG
       });
 
@@ -180,10 +143,10 @@ router.get('/call-feedback-graph', async (req, res) => {
 
 
 
-router.get('/call-feedback-stats', async (req, res) => {
+app.get('/call-feedback-stats', async (req, res) => {
   try {
       // Call the Flask API
-      const response = await axios.get('https://lolos-place-backend-1.onrender.com/feedback-stats');
+      const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-stats');
 
       // Forward the JSON data received from Flask
       res.json(response.data);
@@ -199,10 +162,10 @@ router.get('/call-feedback-stats', async (req, res) => {
 
 
 
-router.post('/api/call-analyze-sentiment', async (req, res) => {
+app.post('/api/call-analyze-sentiment', async (req, res) => {
   try {
       // Forward the JSON body to the Flask API with correct headers
-      const response = await axios.post('https://lolos-place-backend-1.onrender.com/api/analyze-sentiment', req.body, {
+      const response = await axios.post('https://lolos-place-backend.onrender.com/api/analyze-sentiment', req.body, {
           headers: {
               'Content-Type': 'application/json',
           },
@@ -218,7 +181,7 @@ router.post('/api/call-analyze-sentiment', async (req, res) => {
 
 
 
-router.get('/node-test-db', async (req, res) => {
+app.get('/node-test-db', async (req, res) => {
   try {
     // Forward the request to the Flask API
     const response = await axios.get('https://lolos-place-backend.onrender.com/test-db');
@@ -242,4 +205,5 @@ router.get('/node-test-db', async (req, res) => {
 // Mounting the router on the main app
 app.use(router);
 
-module.exports = router;
+
+module.exports = router; 

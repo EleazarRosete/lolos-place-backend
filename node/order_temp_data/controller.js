@@ -1,11 +1,14 @@
 const pool = require('../db');
 const queries = require('./queries');
 
+
+
+
 const addTempData = async (req, res) => {
-    const { order_data } = req.body;
+    const { menu_id,name,price,quantity,stocks, total } = req.body;
 
     try {
-        const addResult = await pool.query(queries.addProduct, [order_data]);
+        const addResult = await pool.query(queries.addProduct, [ menu_id,name,price,quantity,stocks, total ]);
         res.status(201).json({ 
             message: 'Order data added successfully', 
             productId: addResult.rows[0].order_temp_storage_id 
@@ -27,16 +30,15 @@ const getTempData = async (req, res) => {
 };
 
 const updateTempData = async (req, res) => {
-    const { order_data } = req.body;
-    const { order_temp_storage_id } = req.params; // Get ID from URL params
+    const { quantity } = req.body;
+    const { menu_id } = req.params; // Get ID from URL params
 
-    if (!order_data) {
+    if (!menu_id) {
         return res.status(400).json({ error: 'Missing required fields' });
     }
 
     try {
-        const orderDataJson = JSON.stringify(order_data); // Convert to JSON string
-        await pool.query(queries.updateProduct, [orderDataJson, order_temp_storage_id]);
+        await pool.query(queries.updateProduct, [quantity, menu_id]);
 
         res.status(200).json({ message: 'Product updated successfully' });
     } catch (error) {
@@ -46,15 +48,46 @@ const updateTempData = async (req, res) => {
 };
 
 
-const deleteTempData = async (req, res) => {
-    const { order_temp_storage_id } = req.params;
 
-    if (!order_temp_storage_id) {
-        return res.status(400).json({ error: 'Missing order_temp_storage_id' });
-    }
+
+
+
+
+
+const minusTempData = async (req, res) => {
+    const productId = parseInt(req.params.menu_id); 
 
     try {
-        await pool.query(queries.deleteProduct, [order_temp_storage_id]);
+
+        await pool.query(queries.minusTempData, [ productId]); // Ensure query expects (quantity, productId)
+
+        res.status(200).json({ message: 'Product stock updated successfully.' });
+    } catch (error) {
+        console.error('Error updating product stock:', error);
+        res.status(500).json({ error: 'Error updating product stock' });
+    }
+};
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+const deleteTempData = async (req, res) => {
+
+    try {
+        await pool.query(queries.deleteProduct);
         res.status(200).json({ message: 'Product deleted successfully' });
     } catch (error) {
         console.error('Error deleting product:', error);
@@ -62,9 +95,31 @@ const deleteTempData = async (req, res) => {
     }
 };
 
+
+
+
+const deleteTempDataByID = async (req, res) => {
+    const productId = parseInt(req.params.menu_id); 
+
+    if (!productId) {
+        return res.status(400).json({ error: 'Missing order_temp_storage_id' });
+    }
+
+    try {
+        await pool.query(queries.deleteProductByID, [productId]);
+        res.status(200).json({ message: 'Product deleted successfully' });
+    } catch (error) {
+        console.error('Error deleting product:', error);
+        res.status(500).json({ error: 'Error deleting product' });
+    }
+};
+
+
 module.exports = {
     addTempData,
     getTempData,
     updateTempData,
+    minusTempData,
     deleteTempData,
+    deleteTempDataByID,
 };
