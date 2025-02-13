@@ -79,6 +79,31 @@ router.get('/test', (req, res) => {
 });
 
 
+router.get('/sales-summary', async (req, res) => {
+    try {
+        const { start_date, end_date } = req.query;
+  
+        if (!start_date || !end_date) {
+            return res.status(400).json({ error: 'Start and end dates are required' });
+        }
+  
+        const query = `
+            SELECT product_name, category, SUM(quantity_sold) AS total_quantity_sold
+            FROM sales_data
+            WHERE date BETWEEN $1 AND $2
+            GROUP BY product_name, category
+            ORDER BY total_quantity_sold DESC;
+        `;
+  
+        const { rows } = await pool.query(query, [start_date, end_date]);
+        res.json(rows);
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
+  });
+  
+
 
 router.get('/predict-sales', async (req, res) => {
     try {
