@@ -1,322 +1,177 @@
-from flask import Flask, jsonify, request, send_file
-from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
+from flask import Flask, jsonify
 from flask_cors import CORS
-from flask_cors import cross_origin
-import plotly.graph_objects as go
-import plotly.io as pio
-import matplotlib.pyplot as plt
-import io
 import psycopg2
-import numpy as np
-import kaleido  # Ensure kaleido is installed
 import pandas as pd
-from sklearn.linear_model import LinearRegression
-from datetime import datetime  # Import datetime module
-import base64
-from dotenv import load_dotenv
+import xgboost as xgb
 import os
-from urllib.parse import urlparse
+from dotenv import load_dotenv
+from sklearn.model_selection import train_test_split
+from datetime import datetime
 
-# Load environment variables from the .env file
-load_dotenv(dotenv_path='../.env')
-app_port = os.getenv('APP_PORT')
-print(app_port)
+# Load environment variables
+load_dotenv()
 
+# Ensure port is an integer
+app_port = int(os.getenv("APP_PORT", 5000))  # Default to 5000 if not set
+
+# Flask app setup
 app = Flask(__name__)
 CORS(app)
 
-analyzer = SentimentIntensityAnalyzer()
+# Database Configuration
+DB_CONFIG = {
+    "dbname": os.getenv("DB_DATABASE"),
+    "user": os.getenv("DB_USER"),
+    "password": os.getenv("DB_PASSWORD"),
+    "host": os.getenv("DB_HOST"),
+    "port": os.getenv("DB_PORT"),
+}
 
-# Determine if DATABASE_URL is provided (e.g., in a production environment)
-DATABASE_URL = os.getenv('DATABASE_URL')
+# Debug: Print database config (without password for security)
+print("🔹 DB Config:", {k: v for k, v in DB_CONFIG.items() if k != "password"})
 
-if DATABASE_URL:
-    # Parse the DATABASE_URL for production
-    url = urlparse(DATABASE_URL)
-    db_config = {
-        'dbname': url.path[1:],  # Remove leading '/'
-        'user': url.username,
-        'password': url.password,
-        'host': url.hostname,
-        'port': url.port,
-        'sslmode': 'require'  # Enforce SSL for production
-    }
-else:
-    # Default to environment variables for local development
-    db_config = {
-        'dbname': os.getenv('DB_DATABASE', 'lolos_place_database'),
-        'user': os.getenv('DB_USER', 'lolos_place_database_user'),
-        'password': os.getenv('DB_PASSWORD', 'kxwp1hAcA2psjJr8fNsqQSdWjreTBC5F'),
-        'host': os.getenv('DB_HOST', 'localhost'),
-        'port': os.getenv('DB_PORT', '5432')
-    }
-
-# Function to get the database connection
-def get_db_connection():
-    return psycopg2.connect(**db_config)
+# Test database connection
+try:
+    conn = psycopg2.connect(**DB_CONFIG)
+    print("✅ Database connection successful!")
+    conn.close()
+except Exception as e:
+    print("❌ Database connection failed:", str(e))
 
 
-
-
-@app.route('/')
-def home():
-    return 'Flask app is working!'
-
-
-
-
-from datetime import time  # Import the time class
-@app.route('/test-db')
-def test_db():
+# Fetch sales data from database
+def get_sales_data():
     try:
-        # Establish a database connection
-        conn = get_db_connection()
-        cursor = conn.cursor()
-
-        # Execute a lightweight query to test the connection
-        cursor.execute("SELECT 1;")
-
-        # Close the cursor and connection
-        cursor.close()
+        conn = psycopg2.connect(**DB_CONFIG)
+        query = "SELECT date, gross_sales FROM sales_data;"
+        df = pd.read_sql_query(query, conn)  # FIXED: Use `read_sql_query`
         conn.close()
 
-        return jsonify({'message': 'Database connected successfully flask'})
-    except Exception as e:
-        return jsonify({'error': 'Failed to connect to the database', 'details': str(e)}), 500
-
-
-
-@app.route('/sales-forecast', methods=['GET'])
-def sales_forecast():
-    try:
-        # Connect to the database
-        with get_db_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT 
-                        EXTRACT(YEAR FROM CAST(date AS DATE)) AS year,
-                        EXTRACT(MONTH FROM CAST(date AS DATE)) AS month,
-                        SUM(gross_sales) AS total_gross_sales
-                    FROM sales_data
-                    WHERE EXTRACT(YEAR FROM CAST(date AS DATE)) >= 2019
-                    GROUP BY year, month
-                    ORDER BY year, month;
-                """)
-                data = cursor.fetchall()
-
-        # If no data is found
-        if not data:
-            return jsonify({"error": "No sales data available for forecasting"}), 404
-
-        # Prepare data for forecasting
-        df = pd.DataFrame(data, columns=['year', 'month', 'total_gross_sales'])
-
-        # Combine year and month to create a date column (first day of each month)
-        df['date'] = pd.to_datetime(df[['year', 'month']].assign(day=1))
-
-        # Ensure the data has valid values
-        df = df.dropna(subset=['date', 'total_gross_sales'])
-
-        # Check if the cleaned data is empty
         if df.empty:
-            return jsonify({"error": "Data is empty after cleaning"}), 404
+            print("⚠️ Warning: No sales data found.")
+            return None  # Prevents errors later
 
-        # Convert date to ordinal for modeling
-        df['date_ordinal'] = df['date'].apply(lambda x: x.toordinal())
-
-        # Prepare independent (X) and dependent (y) variables
-        X = df['date_ordinal'].values.reshape(-1, 1)
-        y = df['total_gross_sales'].values
-
-        # Ensure there is enough data for linear regression
-        if len(X) < 2:  # Need at least two data points to fit the model
-            return jsonify({"error": "Not enough data to fit the model"}), 400
-
-        # Create a Linear Regression model and fit the data
-        model = LinearRegression()
-        model.fit(X, y)
-
-        # Predict sales for each month of the current year
-        current_year = datetime.now().year
-        monthly_forecasts = []
-        for month in range(1, 13):
-            month_date = datetime(current_year, month, 1)
-            month_ordinal = np.array([month_date.toordinal()]).reshape(-1, 1)
-            predicted_sales = model.predict(month_ordinal)[0]
-            monthly_forecasts.append({
-                'year': current_year,
-                'month': month,
-                'predicted_sales': predicted_sales
-            })
-
-        # Prepare the response data
-        response_data = {
-            'predicted_sales_current_year': monthly_forecasts
-        }
-
-        return jsonify(response_data)
+        return df
 
     except Exception as e:
-        return jsonify({"error": "Error in forecasting sales: " + str(e)}), 500
+        print("❌ Database Error:", str(e))
+        return None  # Return None if an error occurs
 
 
+def preprocess_data(df):
+    print("\U0001F537 Preprocessing Data...")
 
+    if df.empty:
+        print("\u274C DataFrame is empty!")
+        return None
 
+    if 'date' not in df.columns:
+        print("\u274C Column 'date' is missing!")
+        return None
 
-
-
-@app.route('/feedback-graph', methods=['GET'])
-def feedback_graph():
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT sentiment, COUNT(*) 
-                    FROM feedback 
-                    GROUP BY sentiment;
-                """)
-                sentiment_data = cursor.fetchall()
+        df['date'] = pd.to_datetime(df['date'], errors='coerce')
+    except Exception as e:
+        print(f"\u274C Date conversion failed: {e}")
+        return None
 
-        if not sentiment_data:
-            return jsonify({"error": "No feedback data available"}), 404
+    # Identify invalid dates (NaT values after conversion)
+    invalid_dates = df[df['date'].isnull()]
+    if not invalid_dates.empty:
+        print("⚠️ Warning: Some 'date' values are invalid and could not be converted.")
+        print("🚨 Invalid Date Values:")
+        print(invalid_dates)
+    
+    # Drop only rows where the date is NaT (invalid)
+    df = df.dropna(subset=['date'])
+    
+    df = df.sort_values('date')
+    df['month'] = df['date'].dt.month
+    df['year'] = df['date'].dt.year
+    df.drop(columns=['date'], inplace=True)  # Remove the date column
 
-        # Extract sentiments and counts dynamically
-        sentiments = [row[0].capitalize() for row in sentiment_data]
-        counts = [row[1] for row in sentiment_data]
+    return df
 
-        # Define default colors for known sentiments
-        sentiment_colors = {
-            "Positive": "green",
-            "Negative": "red",
-            "Neutral": "gray"
-        }
-        # Assign colors dynamically, default to blue for unknown sentiments
-        colors = [sentiment_colors.get(sentiment, "blue") for sentiment in sentiments]
 
-        # Generate the pie chart
-        fig = go.Figure(data=[go.Pie(labels=sentiments, values=counts, marker=dict(colors=colors))])
+# Prepare features and target variable
+def prepare_features(df):
+    X = df.drop(columns=["gross_sales"])  # Features
+    y = df["gross_sales"]  # Target
+    return X, y
 
-        fig.update_layout(
-            title="Sentiment Distribution",
-            showlegend=True,
-            plot_bgcolor="white",
-            paper_bgcolor="white",
-            font=dict(color="black"),
+
+# Train XGBoost model
+def train_model(X, y):
+    try:
+        X_train, X_test, y_train, y_test = train_test_split(
+            X, y, test_size=0.2, random_state=42
         )
 
-        # Convert the figure to an SVG image using Kaleido
-        img_io = io.BytesIO()
-        pio.write_image(fig, img_io, format='svg')
-        img_io.seek(0)
+        model = xgb.XGBRegressor(
+            objective="reg:squarederror", n_estimators=100, learning_rate=0.1, max_depth=5
+        )
+        model.fit(X_train, y_train)
 
-        return send_file(img_io, mimetype='image/svg+xml')
-
+        return model
     except Exception as e:
-        print("Error generating feedback graph:", e)
-        return jsonify({"error": "Error generating graph"}), 500
+        print("❌ Model Training Error:", str(e))
+        return None
 
 
-
-
-
-
-
-
-
-
-
-
-
-@app.route('/feedback-stats', methods=['GET'])
-def feedback_stats():
+# Predict future sales
+def predict_sales(model, X_future):
     try:
-        with get_db_connection() as conn:
-            with conn.cursor() as cursor:
-                cursor.execute("""
-                    SELECT sentiment, COUNT(*) 
-                    FROM feedback 
-                    GROUP BY sentiment;
-                """)
-                sentiment_data = cursor.fetchall()
-
-        if not sentiment_data:
-            return jsonify({"error": "No feedback data available"}), 404
-
-        # Prepare the data for response
-        total_feedbacks = sum(row[1] for row in sentiment_data)
-        feedback_stats = {
-            "total": total_feedbacks,
-            "positive": next((row[1] for row in sentiment_data if row[0].lower() == "positive"), 0),
-            "negative": next((row[1] for row in sentiment_data if row[0].lower() == "negative"), 0),
-            "neutral": next((row[1] for row in sentiment_data if row[0].lower() == "neutral"), 0),
-        }
-
-        return jsonify(feedback_stats)
-
+        return model.predict(X_future)
     except Exception as e:
-        print("Error fetching feedback stats:", e)
-        return jsonify({"error": "Error fetching feedback stats"}), 500
+        print("❌ Prediction Error:", str(e))
+        return None
 
 
+# Flask API route for sales prediction
+@app.route("/predict-sales", methods=["GET"])
+def predict_sales_api():
+    df = get_sales_data()
 
+    if df is None:
+        print("❌ Failed to fetch data: get_sales_data() returned None.")
+        return jsonify({"error": "Database query failed"}), 500
 
+    if df.empty:
+        print("⚠️ Warning: No data retrieved from the database.")
+        return jsonify({"error": "No sales data available"}), 500
 
+    print("✅ Fetched Data (First 5 Rows):\n", df.head())  # Debug output
 
+    print("✅ Raw Data Preview:\n", df.head())
+    print("🔹 Columns:", df.columns)
 
+    df = preprocess_data(df)
+    if df is None:
+        return jsonify({"error": "Data preprocessing failed"}), 500
 
-# Negative words that could appear in text
-negative_words = ['bad', 'sad', 'angry', 'hate', 'worst', 'terrible', 'awful', 'dislike', 'sinful']
+    X, y = prepare_features(df)
 
-# Specific cases where negative words indicate positive sentiment
-positive_with_negative_words = [
-    "sinful",  # This could be used in a positive way when describing indulgence, like in desserts
-    "bad"  # Sometimes 'bad' is used in a playful or indulgent context (e.g., "This is bad, but so good")
-]
+    model = train_model(X, y)
+    if model is None:
+        return jsonify({"error": "Model training failed"}), 500
 
+    # Generate 12 months of predictions for the current year
+    current_year = datetime.now().year
+    future_dates = pd.DataFrame({
+        'month': list(range(1, 13)),  # January to December
+        'year': [current_year] * 12  # Current year
+    })
 
+    predictions = predict_sales(model, future_dates)
+    if predictions is None:
+        return jsonify({"error": "Prediction failed"}), 500
 
-
-@app.route('/api/analyze-sentiment', methods=['POST'])
-def analyze_sentiment():
-    data = request.get_json()  # Getting the JSON data from the request
-    text = data.get('text')  # Extracting the text field from the JSON data
-    
-    # Analyzing sentiment using the VADER sentiment analyzer
-    sentiment_score = analyzer.polarity_scores(text)
-    compound_score = sentiment_score['compound']
-    
-    # Check for the presence of negative words, but allowing for positive sentiment context
-    contains_negative_word = any(neg_word in text.lower() for neg_word in negative_words)
-    
-    # Special case for identifying positive sentiment with negative words
-    sentiment_label = ''
-    
-    # Check if the text contains any words that should be considered as positive in context
-    if contains_negative_word:
-        if any(phrase in text.lower() for phrase in positive_with_negative_words):
-            sentiment_label = 'positive sentiment with negative words'
-        elif compound_score > 0.5:  # If VADER analysis indicates overall positive sentiment
-            sentiment_label = 'positive sentiment with negative words'
-        elif compound_score < -0.5:  # If the sentiment score is clearly negative
-            sentiment_label = 'negative sentiment with negative words'
-        else:
-            sentiment_label = 'neutral sentiment with negative words'
-    else:
-        # If no negative words are detected, proceed with regular sentiment analysis
-        if compound_score > 0.5:
-            sentiment_label = 'positive'
-        elif compound_score < -0.5:
-            sentiment_label = 'negative'
-        else:
-            sentiment_label = 'neutral'
-
-    # Returning the sentiment result as a JSON response
     return jsonify({
-        'compound': compound_score,
-        'sentiment': sentiment_label
+        "year": current_year,
+        "predicted_sales": {f"{current_year}-{month:02d}": float(pred) for month, pred in zip(range(1, 13), predictions)}
     })
 
 
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=app_port)
+if __name__ == "__main__":
+    print(f"🚀 Starting Flask server on port {app_port}...")
+    app.run(host="0.0.0.0", port=app_port, debug=True)

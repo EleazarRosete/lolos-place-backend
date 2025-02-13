@@ -79,45 +79,34 @@ router.get('/test', (req, res) => {
 });
 
 
-router.get('/sales-summary', async (req, res) => {
+
+router.get('/predict-sales', async (req, res) => {
+    try {
+        const response = await axios.get('http://127.0.0.1:5000/predict-sales');
+        res.json(response.data);
+    } catch (error) {
+        res.status(500).json({ error: 'Failed to fetch sales prediction' });
+    }
+});
+
+
+router.get('/transactions', async (req, res) => {
   try {
-      const { start_date, end_date } = req.query;
-
-      if (!start_date || !end_date) {
-          return res.status(400).json({ error: 'Start and end dates are required' });
-      }
-
-      const query = `
-          SELECT product_name, category, SUM(quantity_sold) AS total_quantity_sold
+      const result = await pool.query(`
+          SELECT 
+              EXTRACT(YEAR FROM date::DATE) AS year,
+              EXTRACT(MONTH FROM date::DATE) AS month,
+              SUM(gross_sales) AS total_sales
           FROM sales_data
-          WHERE date BETWEEN $1 AND $2
-          GROUP BY product_name, category
-          ORDER BY total_quantity_sold DESC;
-      `;
-
-      const { rows } = await pool.query(query, [start_date, end_date]);
-      res.json(rows);
-  } catch (err) {
-      console.error(err);
+          GROUP BY year, month
+          ORDER BY year ASC, month ASC
+      `);
+      res.json(result.rows);
+  } catch (error) {
+      console.error('Error fetching transactions:', error);
       res.status(500).json({ error: 'Internal Server Error' });
   }
 });
-
-
-
-app.get('/call-sales-forecast', async (req, res) => {
-  try {
-    // Call the Flask /sales-forecast route using GET method
-    const response = await axios.get('https://lolos-place-backend.onrender.com/sales-forecast'); // Flask server URL
-    // Send the response data from Flask to the client
-    res.json(response.data);
-    console.log(response.data);
-  } catch (error) {
-    console.error('Error calling Flask sales-forecast route:', error.response ? error.response.data : error.message);
-    res.status(500).json({ error: 'Error calling Flask sales-forecast route' });
-  }
-});
-
 
 
 
@@ -126,7 +115,7 @@ app.get('/call-sales-forecast', async (req, res) => {
 app.get('/call-feedback-graph', async (req, res) => {
   try {
       // Call the Flask API
-      const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-graph', null, {
+      const response = await axios.get('http://127.0.0.1:5000/feedback-graph', null, {
           responseType: 'arraybuffer', // To handle binary data like SVG
       });
 
