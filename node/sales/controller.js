@@ -7,9 +7,13 @@ const addSales = async (req, res) => {
         amount, service_charge, gross_sales, product_name, category,
         quantity_sold, price_per_unit, mode_of_payment, order_type
     } = req.body;
+    
+
 
     try {
-        // Using the addSales query to insert a new sale into the database
+
+        // Using the addSales query to insert a new sal
+        // e into the database
         const addResult = await pool.query(queries.addSales, [
             amount, service_charge, gross_sales, product_name, category,
             quantity_sold, price_per_unit, mode_of_payment, order_type
@@ -19,6 +23,8 @@ const addSales = async (req, res) => {
         res.status(201).json({
             message: 'Sales added successfully',
         });
+
+        console.log("Sales added successfully");
     } catch (error) {
         console.error('Error adding sales:', error.message);
         res.status(500).json({ error: `Error adding sales: ${error.message}` });

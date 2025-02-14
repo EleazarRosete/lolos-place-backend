@@ -10,6 +10,8 @@ const updateStock = `UPDATE menu_items SET stocks = stocks - $1 WHERE menu_id = 
 const addOrder = `INSERT INTO orders (user_id, mop, total_amount, date, time, delivery, reservation_id, order_type, customer_name, number_of_people, ispaid, table_id ) VALUES (14, $1, $2, CURRENT_DATE, CURRENT_TIME, $3, $4, $5,$6,$7,$8,$9) RETURNING order_id;`;
 const getOrder = 'SELECT * FROM orders;';
 
+const getOrderQuantities = 'SELECT * FROM order_quantities;';
+
 const addReservation = `INSERT INTO reservations (user_id, guest_number, reservation_date, reservation_time, advance_order) VALUES (13, $1, $2, $3, $4) RETURNING reservation_id;`;
 const getReservation = `SELECT 
     r.reservation_id,
@@ -52,6 +54,10 @@ const updateIsPaid = `UPDATE orders
 SET ispaid = true
 WHERE order_id = $1;`;
 
+const updateNotPaid = `UPDATE orders
+SET ispaid = false
+WHERE order_id = $1;`
+
 const deleteOrder = `DELETE FROM orders
 WHERE order_id = $1;`;
 
@@ -79,4 +85,6 @@ module.exports = {
     orderServed,
     getTempData,
     updateIsPaid,
+    updateNotPaid,
+    getOrderQuantities,
 };

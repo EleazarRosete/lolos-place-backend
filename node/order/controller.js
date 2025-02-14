@@ -204,6 +204,20 @@ const addOrder = async (req, res) => {
 
 
 
+
+const getOrderQuantities = (req, res) => {
+    pool.query(queries.getOrderQuantities, (error, results) => {
+        if (error) {
+            console.error('Error fetching Product:', error);
+            return res.status(500).json({ error: 'Error fetching Product' });
+        }
+        res.status(200).json(results.rows);
+    });
+};
+
+
+
+
 const getOrder = (req, res) => {
     pool.query(queries.getOrder, (error, results) => {
         if (error) {
@@ -399,11 +413,10 @@ const getTempData = (req, res) => {
 };
 
 const deleteTempData = async (req, res) => {
-    const { purchases_id } = req.params;
 
     try {
         // Attempt to delete the reservation
-        const result = await pool.query('DELETE FROM temp_data WHERE purchases_id = $1 RETURNING *', [purchases_id]);
+        const result = await pool.query('DELETE FROM temp_data;');
 
         // Check if any rows were deleted
         if (result.rowCount === 0) {
@@ -421,23 +434,55 @@ const deleteTempData = async (req, res) => {
     }
 };
 
+
+
 const updateIsPaid = async (req, res) => {
     const { order_id } = req.params;
     try {
-      console.log(`Updating payment status for order ID: ${order_id}`);
-      const response = await pool.query(queries.updateIsPaid, [order_id]);
+      const result = await pool.query(queries.updateIsPaid, [order_id]);
   
-      if (response.rowCount === 0) {
+      if (result.rowCount === 0) {
         return res.status(404).json({ message: "Order not found" });
       }
   
-      res.status(200).json({ message: "Order payment status updated successfully" });
+      return res
+        .status(200)
+        .json({ message: "Order payment status updated to PAID successfully" });
     } catch (err) {
-      console.error(`Error updating order payment status for order ID ${order_id}: ${err.message}`);
-      res.status(500).json({ message: `Error updating order payment status: ${err.message}` });
+      console.error(
+        `Error updating order payment status for order ID ${order_id}: ${err.message}`
+      );
+      return res
+        .status(500)
+        .json({ message: `Error updating order payment status: ${err.message}` });
     }
   };
   
+  // Update the order as not-paid
+  const updateNotPaid = async (req, res) => {
+    const { order_id } = req.params;
+    try {
+      const result = await pool.query(queries.updateNotPaid, [order_id]);
+  
+      if (result.rowCount === 0) {
+        return res.status(404).json({ message: "Order not found" });
+      }
+  
+      return res
+        .status(200)
+        .json({ message: "Order payment status updated to NOT PAID successfully" });
+    } catch (err) {
+      console.error(
+        `Error updating order payment status for order ID ${order_id}: ${err.message}`
+      );
+      return res
+        .status(500)
+        .json({ message: `Error updating order payment status: ${err.message}` });
+    }
+  };
+
+
+
 
   const deleteOrder = async (req, res) => {
     try {
@@ -481,4 +526,6 @@ module.exports = {
     getTempData,
     deleteTempData,
     updateIsPaid,
+    updateNotPaid,
+    getOrderQuantities,
 };

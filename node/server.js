@@ -63,11 +63,10 @@ app.use('/flask', async (req, res) => {
 
 
 
-
 app.get('/test-db', async (req, res) => {
   try {
     const result = await pool.query('SELECT 1');
-    res.json({ message: 'Database connected node', result: result.rows });
+    res.json({ message: 'Database connected nodeeee', result: result.rows });
   } catch (error) {
     console.error(error);
     res.status(500).send('Database connection failed');
@@ -664,7 +663,7 @@ const generateRandomId = (length) => {
 };
 
 app.post('/api/create-gcash-checkout-session', async (req, res) => {
-  const { user_id, lineItems , orderId} = req.body;
+  const { user_id, lineItems , orderId,from} = req.body;
 
   const formattedLineItems = lineItems.map((product) => {
     return {
@@ -677,14 +676,26 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
 
   const randomId = generateRandomId(28);
 
-  // Define URLs based on user_id
-  const successUrl = user_id === 14
-    ? `https://lolos-place-frontend.onrender.com/admin/pos/successful?${orderId}`
-    : `https://lolos-place-frontend.onrender.com/successpage?session_id=${randomId}`;
+// Define base URLs
+const baseAdminUrl = "http://localhost:5173/admin";
+const landingUrl = "https://lolos-place-frontend.onrender.com";
 
-  const cancelUrl = user_id === 14
-    ? `https://lolos-place-frontend.onrender.com/admin/pos/failed?${orderId}`
-    : 'https://lolos-place-frontend.onrender.com/';
+// Build success URL based on user_id and from parameter
+const successUrl =
+  user_id === 14
+    ? from === "pos"
+      ? `${baseAdminUrl}/pos/successful`
+      : `${baseAdminUrl}/orders/successful`
+    : `${landingUrl}/successpage?session_id=${randomId}`;
+
+// Build cancel URL based on user_id and from parameter
+const cancelUrl =
+  user_id === 14
+    ? from === "pos"
+      ? `${baseAdminUrl}/pos/failed`
+      : `${baseAdminUrl}/orders/failed`
+    : landingUrl;
+
 
 
   try {
