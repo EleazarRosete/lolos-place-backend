@@ -136,83 +136,25 @@ router.get('/transactions', async (req, res) => {
 
 
 
+router.get('/feedback-stats', async (req, res) => {
+    try {
+        const query = `
+            SELECT 
+                COUNT(CASE WHEN LOWER(sentiment) = 'positive' THEN 1 END) AS positive_count,
+                COUNT(CASE WHEN LOWER(sentiment) = 'negative' THEN 1 END) AS negative_count,
+                COUNT(CASE WHEN LOWER(sentiment) = 'neutral' THEN 1 END) AS neutral_count,
+                COUNT(*) AS total_count
+            FROM feedback;
+        `;
 
-app.get('/call-feedback-graph', async (req, res) => {
-  try {
-      // Call the Flask API
-      const response = await axios.get('http://127.0.0.1:5000/feedback-graph', null, {
-          responseType: 'arraybuffer', // To handle binary data like SVG
-      });
-
-      // Set headers and send the SVG content
-      res.setHeader('Content-Type', 'image/svg+xml');
-      res.send(response.data);
-  } catch (error) {
-      console.error('Error calling Flask route:', error.response ? error.response.data : error.message);
-      res.status(500).json({ error: 'Error fetching feedback graph' });
-  }
+        const result = await pool.query(query);
+        res.json(result.rows[0]);
+    } catch (error) {
+        console.error('Error fetching feedback stats:', error);
+        res.status(500).json({ error: 'Internal Server Error' });
+    }
 });
 
-
-
-
-
-app.get('/call-feedback-stats', async (req, res) => {
-  try {
-      // Call the Flask API
-      const response = await axios.get('https://lolos-place-backend.onrender.com/feedback-stats');
-
-      // Forward the JSON data received from Flask
-      res.json(response.data);
-  } catch (error) {
-      console.error('Error calling Flask route:', error.response ? error.response.data : error.message);
-      res.status(500).json({ error: 'Error fetching feedback stats' });
-  }
-});
-
-
-
-
-
-
-
-app.post('/api/call-analyze-sentiment', async (req, res) => {
-  try {
-      // Forward the JSON body to the Flask API with correct headers
-      const response = await axios.post('https://lolos-place-backend.onrender.com/api/analyze-sentiment', req.body, {
-          headers: {
-              'Content-Type': 'application/json',
-          },
-      });
-
-      // Send the Flask API's response back to the client
-      res.json(response.data);
-  } catch (error) {
-      console.error('Error calling Flask route:', error.response ? error.response.data : error.message);
-      res.status(500).json({ error: 'Error analyzing sentiment' });
-  }
-});
-
-
-
-app.get('/node-test-db', async (req, res) => {
-  try {
-    // Forward the request to the Flask API
-    const response = await axios.get('https://lolos-place-backend.onrender.com/test-db');
-
-    // Send the response data back to the client
-    res.json({
-      message: 'Data fetched successfully from Flask API',
-      data: response.data,
-    });
-  } catch (error) {
-    // Handle errors and send the appropriate response
-    res.status(500).json({
-      message: 'Failed to fetch data from Flask API',
-      error: error.response ? error.response.data : error.message,
-    });
-  }
-});
 
 
 
