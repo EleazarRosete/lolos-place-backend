@@ -140,9 +140,9 @@ router.get('/feedback-stats', async (req, res) => {
     try {
         const query = `
             SELECT 
-                COUNT(CASE WHEN LOWER(sentiment) = 'positive' THEN 1 END) AS positive_count,
-                COUNT(CASE WHEN LOWER(sentiment) = 'negative' THEN 1 END) AS negative_count,
-                COUNT(CASE WHEN LOWER(sentiment) = 'neutral' THEN 1 END) AS neutral_count,
+                COUNT(CASE WHEN LOWER(result) = 'positive' THEN 1 END) AS positive_count,
+                COUNT(CASE WHEN LOWER(result) = 'negative' THEN 1 END) AS negative_count,
+                COUNT(CASE WHEN LOWER(result) = 'neutral' THEN 1 END) AS neutral_count,
                 COUNT(*) AS total_count
             FROM feedback;
         `;

@@ -3,7 +3,7 @@ const queries = require('./queries');
 
 
 const addProduct = async (req, res) => {
-    const { name, description, category, price, items, img, stocks } = req.body;
+    const { name, description, category, price, items, img, stocks, main_category} = req.body;
 
     const product_price = parseInt(price, 10);
     const product_stock = parseInt(stocks, 10);
@@ -17,6 +17,7 @@ const addProduct = async (req, res) => {
             items,
             img,
             product_stock,
+            main_category,
         ]);
 
         res.status(201).json({ message: 'Product item added successfully', productId: addResult.rows[0].menu_id });
@@ -58,7 +59,7 @@ const getProductById = (req, res) => {
 
 const updateProduct = (req, res) => {
     // const menu_id = parseInt(req.params.menu_id); // Correctly parse the menu_id
-    const { menu_id, name, description, category, price, items, img, stocks } = req.body;
+    const { menu_id, name, description, category, price, items, img, stocks, main_category} = req.body;
 
     if (!name) {
         return res.status(400).json({ error: 'Product name is required and cannot be null' });
@@ -84,6 +85,7 @@ const updateProduct = (req, res) => {
             items || null,
             img || null,
             stocks || null,
+            main_category || null,
             menu_id // Use menu_id instead of name
         ], (error) => {
             if (error) {
