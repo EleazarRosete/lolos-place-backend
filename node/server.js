@@ -738,6 +738,8 @@ const generateRandomId = (length) => {
   return result;
 };
 
+
+
 app.post('/api/create-gcash-checkout-session', async (req, res) => {
   const { user_id, lineItems , orderId,from} = req.body;
 
@@ -1004,21 +1006,136 @@ app.get('/api/total-guests/:date', async (req, res) => {
   }
 });
 
-// Example backend route (Node.js/Express)
-app.get('/api/total-guests/:date', async (req, res) => {
+
+
+app.post('/api/add-total-guests/:date', async (req, res) => {
   const { date } = req.params;
+  const { guest } = req.body; // Get guest from request body
+
   try {
-    const result = await pool.query('SELECT total_guests FROM total_guest WHERE reservation_date = $1', [date]);
+    const result = await pool.query(
+      'INSERT INTO total_guests (reservation_date, total_guest) VALUES ($1, $2) RETURNING *',
+      [date, guest]
+    );
+
     if (result.rows.length > 0) {
-      res.json({ totalGuests: result.rows[0].total_guests });
+      res.json({ totalGuests: result.rows[0].total_guest });
     } else {
-      res.json({ totalGuests: 0 }); // No reservations for this date
+      res.json({ totalGuests: 0 });
     }
   } catch (error) {
-    console.error('Error fetching total guests:', error);
-    res.status(500).json({ error: 'Failed to fetch total guests' });
+    console.error('Error inserting total guests:', error);
+    res.status(500).json({ error: 'Failed to insert total guests' });
   }
 });
+
+
+
+
+
+
+
+app.post('/api/downpayment-gcash-checkout-session', async (req, res) => {
+  const { user_id, lineItems ,from} = req.body;
+
+  const formattedLineItems = lineItems.map((product) => {
+    return {
+      currency: 'PHP',
+      amount: Math.round(product.price * 100),
+      name: "Downpayment",
+      price: product.price,
+    };
+  });
+
+  const randomId = generateRandomId(28);
+
+// Define base URLs
+const baseAdminUrl = "http://localhost:5173/admin";
+const landingUrl = "https://lolos-place-frontend.onrender.com";
+
+// Build success URL based on user_id and from parameter
+const successUrl =
+  user_id === 14
+    ? from === "pos"
+      ? `${baseAdminUrl}/pos/successful`
+      : `${baseAdminUrl}/orders/successful`
+    : `${landingUrl}/successpage?session_id=${randomId}`;
+
+// Build cancel URL based on user_id and from parameter
+const cancelUrl =
+  user_id === 14
+    ? from === "pos"
+      ? `${baseAdminUrl}/pos/failed`
+      : `${baseAdminUrl}/orders/failed`
+    : landingUrl;
+
+
+
+  try {
+    const response = await axios.post(
+      'https://api.paymongo.com/v1/checkout_sessions',
+      {
+        data: {
+          attributes: {
+            send_email_receipt: false,
+            show_line_items: true,
+            line_items: formattedLineItems,
+            payment_method_types: ['gcash'],
+            success_url: successUrl,
+            cancel_url: cancelUrl,
+          },
+        },
+      },
+      {
+        headers: {
+          accept: 'application/json',
+          'Content-Type': 'application/json',
+          Authorization: `Basic ${Buffer.from(PAYMONGO_SECRET_KEY).toString('base64')}`,
+        },
+      }
+    );
+
+
+    const checkoutUrl = response.data.data.attributes.checkout_url;
+
+    if (!checkoutUrl) {
+      return res.status(500).json({ error: 'Checkout URL not found in response' });
+    }
+
+    const client = await pool.connect();
+
+    try {
+      await client.query('BEGIN');
+
+      // UPSERT query
+      const query = `
+              INSERT INTO payment (user_id, session_id, payment_status)
+              VALUES ($1, $2, $3)
+              ON CONFLICT (user_id) 
+              DO UPDATE SET 
+                  session_id = EXCLUDED.session_id,
+                  payment_status = EXCLUDED.payment_status;
+          `;
+      const values = [user_id, randomId, 'pending'];
+
+      await client.query(query, values);
+      await client.query('COMMIT'); // Commit the transaction
+    } catch (error) {
+      await client.query('ROLLBACK'); // Rollback in case of error
+      console.error('Error inserting/updating payment:', error.message);
+      return res.status(500).json({ error: 'Failed to insert/update payment', details: error.message });
+    } finally {
+      client.release(); // Release the connection back to the pool
+    }
+
+    res.status(200).json({ url: checkoutUrl });
+  } catch (error) {
+    console.error('Error creating checkout session:', error.response ? error.response.data : error.message);
+    res.status(500).json({ error: 'Failed to create checkout session', details: error.response ? error.response.data : error.message });
+  }
+});
+
+
 
 
 

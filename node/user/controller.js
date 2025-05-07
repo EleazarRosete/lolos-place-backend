@@ -44,21 +44,23 @@ const updateUser = async (req, res) => {
     }
 };
 
+
+
 const updatePassword = async (req, res) => {
     const { userId, oldPassword, newPassword, confirmPassword } = req.body;
 
-    // Check if all fields are provided
+
     if (!userId || !oldPassword || !newPassword || !confirmPassword) {
+
         return res.status(400).json({ message: "All fields are required." });
     }
 
-    // Check if new password and confirm password match
     if (newPassword !== confirmPassword) {
+
         return res.status(400).json({ message: "New password and confirm password do not match." });
     }
 
     try {
-        // Fetch user data from the database
         const result = await pool.query('SELECT password FROM users WHERE user_id = $1', [userId]);
         const user = result.rows[0];
 
@@ -66,16 +68,12 @@ const updatePassword = async (req, res) => {
             return res.status(404).json({ message: "User not found." });
         }
 
-        // Check if the old password matches the current password
         const isMatch = await bcrypt.compare(oldPassword, user.password);
         if (!isMatch) {
             return res.status(401).json({ message: "Old password is incorrect." });
         }
 
-        // Hash the new password before saving it
         const hashedPassword = await bcrypt.hash(newPassword, 10);
-
-        // Update the password in the database
         await pool.query('UPDATE users SET password = $1 WHERE user_id = $2', [hashedPassword, userId]);
 
         return res.status(200).json({ message: "Password updated successfully." });
