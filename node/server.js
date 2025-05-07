@@ -1,6 +1,7 @@
 require('dotenv').config({ path: '../.env' });
 
 const express = require('express');
+const nodemailer = require('nodemailer');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
@@ -25,7 +26,45 @@ const order_temp_data = require('./order_temp_data/routes');
 
 const app = express();
 
+let generatedOTP = null;
 
+
+app.post('/api/send-otp', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required.' });
+  }
+
+  // Generate 6-digit OTP
+  generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
+
+  try {
+    // Create transporter
+    const transporter = nodemailer.createTransport({
+      service: 'gmail', // Or your preferred email service
+      auth: {
+        user: process.env.EMAIL_USER,
+        pass: process.env.EMAIL_PASS,
+      },
+    });
+
+    // Mail options
+    const mailOptions = {
+      from: process.env.EMAIL_USER,
+      to: email,
+      subject: 'Your OTP Code',
+      text: `Your OTP code is: ${generatedOTP}`,
+    };
+
+    await transporter.sendMail(mailOptions);
+
+    res.json({ message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error('Error sending email:', error);
+    res.status(500).json({ message: 'Failed to send OTP' });
+  }
+});
 
 
 // function startPythonScript() {
