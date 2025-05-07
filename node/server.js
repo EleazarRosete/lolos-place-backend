@@ -10,6 +10,14 @@ const axios = require('axios');
 const pool = require('./db');
 const admin = process.env.ADMIN_ID;
 const { spawn } = require('child_process');
+const formatTimeTo12Hour = (time) => {
+  const [hour, minute] = time.split(':');
+  const parsedHour = parseInt(hour, 10);
+  const suffix = parsedHour >= 12 ? 'PM' : 'AM';
+  const twelveHour = parsedHour % 12 || 12;
+  return `${twelveHour}:${minute} ${suffix}`;
+};
+
 
 
 const feedback = require('./feedback/routes');
@@ -25,46 +33,6 @@ const order_temp_data = require('./order_temp_data/routes');
 
 
 const app = express();
-
-let generatedOTP = null;
-
-
-app.post('/api/send-otp', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email) {
-    return res.status(400).json({ message: 'Email is required.' });
-  }
-
-  // Generate 6-digit OTP
-  generatedOTP = Math.floor(100000 + Math.random() * 900000).toString();
-
-  try {
-    // Create transporter
-    const transporter = nodemailer.createTransport({
-      service: 'gmail', // Or your preferred email service
-      auth: {
-        user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS,
-      },
-    });
-
-    // Mail options
-    const mailOptions = {
-      from: process.env.EMAIL_USER,
-      to: email,
-      subject: 'Your OTP Code',
-      text: `Your OTP code is: ${generatedOTP}`,
-    };
-
-    await transporter.sendMail(mailOptions);
-
-    res.json({ message: 'OTP sent successfully' });
-  } catch (error) {
-    console.error('Error sending email:', error);
-    res.status(500).json({ message: 'Failed to send OTP' });
-  }
-});
 
 
 // function startPythonScript() {
@@ -440,6 +408,75 @@ app.post('/api/signup', async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+
+
+const transporter = nodemailer.createTransport({
+  service: 'gmail', // Use your email service
+  auth: {
+    user: 'mekelcruzz@gmail.com', // Your email
+    pass: 'qpjn xxky mcrq qcop', // Your email password or app-specific password
+  },
+});
+
+// Function to generate a 6-digit OTP
+const generateOTP = () => {
+  return Math.floor(100000 + Math.random() * 900000).toString();
+};
+
+
+// Store OTPs temporarily (in-memory storage)
+const otpStorage = {};
+
+// Endpoint to send OTP
+app.post('/api/send-otp', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: 'Email is required' });
+  }
+
+  const otp = generateOTP();
+  otpStorage[email] = otp; // Store OTP in memory
+
+  const mailOptions = {
+    from: 'mekelcruzz@gmail.com',
+    to: email,
+    subject: 'Your OTP for Signup',
+    text: `Your OTP is: ${otp}`,
+  };
+
+  try {
+    await transporter.sendMail(mailOptions);
+    res.status(200).json({ message: 'OTP sent successfully' });
+  } catch (error) {
+    console.error('Error sending OTP:', error);
+    res.status(500).json({ message: 'Failed to send OTP' });
+  }
+});
+
+// Endpoint to verify OTP
+app.post('/api/verify-otp', async (req, res) => {
+  const { email, otp } = req.body;
+
+  if (!email || !otp) {
+    return res.status(400).json({ message: 'Email and OTP are required' });
+  }
+
+  if (otpStorage[email] === otp) {
+    delete otpStorage[email]; // Clear OTP after successful verification
+    res.status(200).json({ message: 'OTP verified successfully' });
+  } else {
+    res.status(400).json({ message: 'Invalid OTP' });
+  }
+});
+
+
+
+
+
+
+
+
 
 app.post('/api/changeCustomerPassword', async (req, res) => {
   const { id, oldPassword, newPassword, confirmNewPassword } = req.body;
@@ -949,6 +986,39 @@ app.get('/api/order-history', async (req, res) => {
   }
 });
 
+
+
+
+app.get('/api/total-guests/:date', async (req, res) => {
+  const { date } = req.params;
+  try {
+    const result = await pool.query('SELECT total_guests FROM total_guest WHERE reservation_date = $1', [date]);
+    if (result.rows.length > 0) {
+      res.json({ totalGuests: result.rows[0].total_guests });
+    } else {
+      res.json({ totalGuests: 0 }); // No reservations for this date
+    }
+  } catch (error) {
+    console.error('Error fetching total guests:', error);
+    res.status(500).json({ error: 'Failed to fetch total guests' });
+  }
+});
+
+// Example backend route (Node.js/Express)
+app.get('/api/total-guests/:date', async (req, res) => {
+  const { date } = req.params;
+  try {
+    const result = await pool.query('SELECT total_guests FROM total_guest WHERE reservation_date = $1', [date]);
+    if (result.rows.length > 0) {
+      res.json({ totalGuests: result.rows[0].total_guests });
+    } else {
+      res.json({ totalGuests: 0 }); // No reservations for this date
+    }
+  } catch (error) {
+    console.error('Error fetching total guests:', error);
+    res.status(500).json({ error: 'Failed to fetch total guests' });
+  }
+});
 
 
 
