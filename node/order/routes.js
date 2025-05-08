@@ -23,6 +23,9 @@ router.get('/get-temp-data', controller.getTempData);
 router.delete('/delete-temp-data', controller.deleteTempData);
 
 router.post('/add-reservation', controller.addReservation);
+router.put('/accepted-reservation', controller.accepted);
+router.put('/canceled-reservation', controller.canceled);
+
 router.get('/get-reservation', controller.getReservation);
 router.delete('/cancel-reservation/:reservation_id', controller.cancelReservation);
 

@@ -251,6 +251,79 @@ const addReservation = async (req, res) => {
     }
 };
 
+
+
+
+const accepted = async (req, res) => {
+    const { reservation_id } = req.body;
+    
+
+    if (!reservation_id) {
+        return res.status(400).json({ message: 'Reservation ID is required.' });
+    }
+
+    try {
+        const query = `
+            UPDATE reservations 
+            SET acceptance_status = 'accepted' 
+            WHERE reservation_id = $1 
+            RETURNING *;
+        `;
+        const result = await pool.query(query, [reservation_id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Reservation not found.' });
+        }
+
+        res.status(200).json({
+            message: 'Reservation accepted.',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Error updating reservation:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+};
+
+
+
+
+const canceled = async (req, res) => {
+    const { reservation_id } = req.body;
+    
+
+    if (!reservation_id) {
+        return res.status(400).json({ message: 'Reservation ID is required.' });
+    }
+
+    try {
+        const query = `
+            UPDATE reservations 
+            SET acceptance_status = 'canceled' 
+            WHERE reservation_id = $1 
+            RETURNING *;
+        `;
+        const result = await pool.query(query, [reservation_id]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Reservation not found.' });
+        }
+
+        res.status(200).json({
+            message: 'Reservation canceled.',
+            data: result.rows[0]
+        });
+    } catch (error) {
+        console.error('Error updating reservation:', error);
+        res.status(500).json({ message: 'Server error.' });
+    }
+};
+
+
+
+
+
+
 const getReservation = (req, res) => {
     pool.query(queries.getReservation, (error, results) => {
         if (error) {
@@ -528,4 +601,6 @@ module.exports = {
     updateIsPaid,
     updateNotPaid,
     getOrderQuantities,
+    accepted,
+    canceled,
 };

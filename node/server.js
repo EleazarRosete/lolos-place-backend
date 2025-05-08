@@ -29,6 +29,8 @@ const purchases = require('./purchases/routes');
 const graphs = require('./graphs');
 const user = require('./user/routes');
 const order_temp_data = require('./order_temp_data/routes');
+const sendEmail = require('./sendEmail');
+const sendCancellationEmail = require('./sendCancellationEmail');
 
 
 
@@ -60,7 +62,7 @@ const app = express();
 
 app.use('/flask', async (req, res) => {
   try {
-      const flaskResponse = await axios.get(`http://localhost:10000${req.originalUrl}`);
+      const flaskResponse = await axios.get(`https://lolos-place-backend.onrender.com/${req.originalUrl}`);
       res.send(flaskResponse.data);
   } catch (error) {
       res.status(500).send('Error connecting to Flask');
@@ -91,7 +93,7 @@ app.use(express.json());
 const upload = multer({ dest: 'uploads/' }); // Directory where files will be stored
 
 app.post('/upload', upload.single('file'), (req, res) => {
-  const filePath = `http://localhost:5000/uploads/${req.file.filename}`; // Construct the URL
+  const filePath = `https://lolos-place-backend.onrender.com/uploads/${req.file.filename}`; // Construct the URL
   res.json({ filePath }); // Send back the file path as JSON
 });
 
@@ -124,6 +126,94 @@ app.use('/purchases', purchases);
 app.use('/user', user);
 app.use('/graphs', graphs);
 app.use('/order-temp-data', order_temp_data);
+
+
+
+
+app.post('/api/send-confirmation', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email) {
+      return res.status(400).json({ error: 'Missing email' });
+  }
+
+  try {
+      await sendEmail(email);
+      res.status(200).json({ message: 'Confirmation email sent!' });
+      console.log("SUCCESS");
+  } catch (error) {
+      console.error('Email error:', error);
+      res.status(500).json({ error: 'Failed to send email' });
+  }
+});
+
+
+app.post('/api/cancel-reservation', async (req, res) => {
+  const { email, customerName, reservationDetails } = req.body;
+
+  if (!email || !customerName || !reservationDetails) {
+      return res.status(400).json({ error: 'Missing required fields' });
+  }
+
+  try {
+      await sendCancellationEmail(email, customerName, reservationDetails);
+      res.status(200).json({ message: 'Cancellation email sent!' });
+      console.log("SUCCESS Cancellation");
+
+  } catch (error) {
+      console.error('Error sending email:', error);
+      res.status(500).json({ error: 'Failed to send cancellation email' });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -413,8 +503,8 @@ app.post('/api/signup', async (req, res) => {
 const transporter = nodemailer.createTransport({
   service: 'gmail', // Use your email service
   auth: {
-    user: 'mekelcruzz@gmail.com', // Your email
-    pass: 'qpjn xxky mcrq qcop', // Your email password or app-specific password
+    user: process.env.EMAIL_USER,
+    pass: process.env.EMAIL_PASS
   },
 });
 
@@ -755,7 +845,7 @@ app.post('/api/create-gcash-checkout-session', async (req, res) => {
   const randomId = generateRandomId(28);
 
 // Define base URLs
-const baseAdminUrl = "http://localhost:5173/admin";
+const baseAdminUrl = "https://lolos-place-frontend.onrender.com/admin";
 const landingUrl = "https://lolos-place-frontend.onrender.com";
 
 // Build success URL based on user_id and from parameter
@@ -1050,7 +1140,7 @@ app.post('/api/downpayment-gcash-checkout-session', async (req, res) => {
   const randomId = generateRandomId(28);
 
 // Define base URLs
-const baseAdminUrl = "http://localhost:5173/admin";
+const baseAdminUrl = "https://lolos-place-frontend.onrender.com/admin";
 const landingUrl = "https://lolos-place-frontend.onrender.com";
 
 // Build success URL based on user_id and from parameter

@@ -19,7 +19,8 @@ const getReservation = `SELECT
     u.last_name,
     r.guest_number,
     r.reservation_date,
-    r.reservation_time
+    r.reservation_time,
+    r.acceptance_status
 FROM 
     reservations r
 JOIN 
