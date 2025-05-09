@@ -219,28 +219,33 @@ app.post('/api/cancel-reservation', async (req, res) => {
 
 
 app.post('/api/feedback', async (req, res) => {
-  const { name, comment, feedbackType, compound_score, sentiment } = req.body;
+  const { name,ratings, comment, compound_score } = req.body;
 
-  // Validate required fields
-  if (!name || !comment || !compound_score || !sentiment) {
-    return res.status(400).json({ message: 'Name, comment, score, sentiment, and feedback type are required.' });
+  let result = "Neutral";
+
+  if(compound_score >= 4){
+      result = "Positive";
+  }
+  else if(compound_score <= 2){
+    result = "Negative";
   }
 
-  // Ensure feedbackType is a string if it's an array
-  const feedbackTypeString = Array.isArray(feedbackType) ? feedbackType.join(', ') : feedbackType;
-
+  // Validate required fields
+  if (!name || !ratings || !comment || !compound_score || !result) {
+    return res.status(400).json({ message: 'Name, comment, score, sentiment, and ratings are required.' });
+  }
   try {
     // Insert feedback data into the database
     const query = `
-      INSERT INTO feedback (name, comment, date, compound_score, sentiment, feedback_type)
-      VALUES ($1, $2, NOW(), $3, $4, $5) RETURNING *`;
-    const values = [name, comment, compound_score, sentiment, feedbackTypeString];
+      INSERT INTO feedback (name, ratings, comment, date ,compound_score, result)
+      VALUES ($1, $2, $3, NOW(),$4 , $5) RETURNING *`;
+    const values = [name, ratings,comment, compound_score, result];
 
-    const result = await pool.query(query, values);
+    const results = await pool.query(query, values);
 
     res.status(201).json({
       message: 'Feedback submitted successfully!',
-      feedback: result.rows[0]
+      feedback: results.rows[0]
     });
   } catch (err) {
     console.error('Error saving feedback:', err);
@@ -676,12 +681,16 @@ app.post('/api/web-orders', async (req, res) => {
   }
 });
 
+
+
+
 app.post('/api/orders', async (req, res) => {
   const client = await pool.connect(); // Get a client from the pool
   try {
     // Start a transaction
     await client.query('BEGIN');
 
+    const order_type = "Delivery";
     // Destructure order and delivery details from request body
     const { cart, userId, mop, totalAmount, date, time, deliveryLocation, deliveryStatus } = req.body;
 
@@ -696,11 +705,11 @@ app.post('/api/orders', async (req, res) => {
 
     // Insert order into orders table
     const orderQuery = `
-      INSERT INTO orders (user_id, mop, total_amount, date, time, delivery)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      INSERT INTO orders (user_id, mop, total_amount, date, time, delivery, order_type, ispaid)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
       RETURNING order_id;
     `;
-    const orderValues = [userId, mop, totalAmount, currentDate, currentTime, true]; // Assuming 'delivery' is true
+    const orderValues = [userId, mop, totalAmount, currentDate, currentTime, true,order_type,true]; // Assuming 'delivery' is true
     const orderResult = await client.query(orderQuery, orderValues);
 
     // Retrieve the generated order_id
